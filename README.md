@@ -1,6 +1,6 @@
-# Modular Tanks for KSP(1)
+# Adaptive Tanks for KSP(1)
 
-A modern procedural tank system with a focus on artistic modularity and high visual fidelity.
+A modern procedural tank system with a focus on artistic Adaptiveity and high visual fidelity.
 
 ## General design and generation
 

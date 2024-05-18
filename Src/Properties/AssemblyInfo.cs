@@ -1,15 +1,18 @@
-﻿using System.Reflection;
-using System.Runtime.CompilerServices;
+﻿#region
+
+using System.Reflection;
 using System.Runtime.InteropServices;
+
+#endregion
 
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("ModularTanks")]
+[assembly: AssemblyTitle("AdaptiveTanks")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("ModularTanks")]
+[assembly: AssemblyProduct("AdaptiveTanks")]
 [assembly: AssemblyCopyright("Copyright © Al2Me6 2024")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -34,3 +37,5 @@ using System.Runtime.InteropServices;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
+
+[assembly: KSPAssemblyDependency("ROUtils", 1, 0, 1)]
