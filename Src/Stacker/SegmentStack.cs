@@ -15,14 +15,24 @@ public class SegmentStack(SegmentDef coreDef, List<SegmentPlacement> segments)
         {
             // TODO: select asset based on diameter.
             var coreAsset = coreSegmentDef.models[placement.ModelIndex].assets[0];
+            var nativeDiameter = coreAsset.nativeDiameter;
+            var effectiveDiameter = diameter / nativeDiameter;
+
             var coreSegmentGO = Object.Instantiate(coreAsset.prefab);
             coreSegmentGO.SetActive(true);
+
             var coreSegmentTransform = coreSegmentGO.transform;
             coreSegmentTransform.NestToParent(anchor);
-            coreSegmentTransform.localScale = new Vector3(1f, placement.Stretch, 1f) * diameter;
-            coreSegmentTransform.localPosition = Vector3.up *
-                                                 (placement.NormalizedBaseline +
-                                                  coreAsset.nativeYMin) * diameter;
+
+            coreSegmentTransform.localScale =
+                new Vector3(1f, placement.Stretch, 1f) * effectiveDiameter;
+
+            var normalizedBaselinePosition = coreAsset.nativeYMin / nativeDiameter;
+            coreSegmentTransform.localPosition = new Vector3(
+                0f,
+                (placement.NormalizedBaseline - normalizedBaselinePosition * placement.Stretch) *
+                diameter,
+                0f);
         }
     }
 
