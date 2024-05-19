@@ -105,7 +105,7 @@ public class ModuleAdaptiveTank : PartModule
     {
         UpdateStacker();
         var newStack = stacker.Build();
-        newStack.RealizeGeometry(this, CoreStackAnchorName, currentStack);
+        newStack.RealizeGeometry(part, CoreStackAnchorName, diameter, currentStack);
         currentStack = newStack;
     }
 

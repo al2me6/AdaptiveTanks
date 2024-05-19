@@ -1,15 +1,14 @@
-﻿using ROUtils;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace AdaptiveTanks;
 
-public class TransformUtils
+public static class TransformUtils
 {
-    public static Transform GetOrCreateAnchorTransform(Part part, string name)
+    public static Transform FindOrCreateChild(this Transform parent, string name)
     {
-        if (part.transform.FindDeepChild(name) is Transform existingAnchor) return existingAnchor;
-        var newAnchor = new GameObject(name).transform;
-        newAnchor.NestToParent(part.transform.FindDeepChild("model"));
-        return newAnchor;
+        if (parent.Find(name) is Transform child) return child;
+        child = new GameObject(name).transform;
+        child.NestToParent(parent);
+        return child;
     }
 }

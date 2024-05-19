@@ -40,13 +40,12 @@ public record SegmentStack(
         }
     }
 
-    public void RealizeGeometry(ModuleAdaptiveTank moduleAT, string anchorName,
-        SegmentStack previous)
+    public void RealizeGeometry(Part part, string anchorName, float diameter, SegmentStack previous)
     {
-        var anchor = TransformUtils.GetOrCreateAnchorTransform(moduleAT.part, anchorName);
+        var anchor = Geometry.GetOrCreateAnchor(part, anchorName);
 
         // TODO: adjust existing stack instead of spawning new stack.
         anchor.ClearChildren();
-        RealizeGeometryFromScratch(anchor, moduleAT.diameter);
+        RealizeGeometryFromScratch(anchor, diameter);
     }
 }
