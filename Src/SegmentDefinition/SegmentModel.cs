@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using AdaptiveTanks.ConfigNodeExtensions;
+using AdaptiveTanks.Extensions;
 
 namespace AdaptiveTanks;
 
@@ -8,6 +8,7 @@ public class SegmentModel : IRepeatedConfigNode
     public string ConfigNodeName() => "MODEL";
 
     [Persistent] public float nativeAspectRatio = 1f;
+    [Persistent] public float maxDistortion = 1.2f;
     public readonly List<SegmentAsset> assets = [];
 
     public void Load(ConfigNode node)

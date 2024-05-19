@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace AdaptiveTanks.ConfigNodeExtensions;
+namespace AdaptiveTanks.Extensions;
 
 public interface IRepeatedConfigNode : IConfigNode
 {

@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using AdaptiveTanks.ConfigNodeExtensions;
+using AdaptiveTanks.Extensions;
 using UnityEngine;
 
 namespace AdaptiveTanks;

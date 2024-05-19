@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using AdaptiveTanks.ConfigNodeExtensions;
+using AdaptiveTanks.Extensions;
 
 namespace AdaptiveTanks;
 
@@ -21,7 +21,6 @@ public class SegmentDef : IRepeatedConfigNode
 
     [Persistent] public string name;
     [Persistent] public SegmentKind kind;
-    [Persistent] public float maxDistortion = 1.2f;
     public readonly List<SegmentModel> models = [];
 
     public List<float> aspectRatios { get; private set; }
