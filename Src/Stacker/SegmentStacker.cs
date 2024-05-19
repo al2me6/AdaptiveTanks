@@ -4,11 +4,7 @@ using UnityEngine;
 
 namespace AdaptiveTanks;
 
-public struct CoreSolution(List<int> stack, float height)
-{
-    public List<int> Stack = stack;
-    public float Height = height;
-}
+public readonly record struct CoreSolution(List<int> Stack, float Height);
 
 public class SegmentStacker
 {

@@ -4,17 +4,21 @@ using UnityEngine;
 
 namespace AdaptiveTanks;
 
-public class SegmentStack(SegmentDef coreDef, List<SegmentPlacement> segments)
-{
-    public SegmentDef coreSegmentDef = coreDef;
-    public List<SegmentPlacement> segmentPlacements = segments;
+public readonly record struct SegmentPlacement(
+    int ModelIndex,
+    float NormalizedBaseline,
+    float Stretch);
 
+public record SegmentStack(
+    SegmentDef CoreSegmentDef,
+    List<SegmentPlacement> SegmentPlacements)
+{
     protected void RealizeGeometryFromScratch(Transform anchor, float diameter)
     {
-        foreach (var placement in segmentPlacements)
+        foreach (var placement in SegmentPlacements)
         {
             // TODO: select asset based on diameter.
-            var coreAsset = coreSegmentDef.models[placement.ModelIndex].assets[0];
+            var coreAsset = CoreSegmentDef.models[placement.ModelIndex].assets[0];
             var nativeDiameter = coreAsset.nativeDiameter;
             var effectiveDiameter = diameter / nativeDiameter;
 
