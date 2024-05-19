@@ -14,4 +14,17 @@ public static class PAWExtensions
     {
         return field.uiControlEditor as T;
     }
+
+    public static void SetMinMax(this UI_FloatEdit edit, float min, float max)
+    {
+        edit.minValue = min;
+        edit.maxValue = max;
+    }
+
+    public static void SetIncrements(this UI_FloatEdit edit, float large, float small, float slide)
+    {
+        edit.incrementLarge = large;
+        edit.incrementSmall = small;
+        edit.incrementSlide = slide;
+    }
 }

@@ -5,6 +5,12 @@ namespace AdaptiveTanks;
 
 public class ModuleAdaptiveTank : PartModule
 {
+    #region constants
+
+    public const string CoreStackAnchorName = "__ATCoreStack";
+
+    #endregion
+
     #region PAW
 
     public const string PAWName = "AdaptiveTanks";
@@ -12,19 +18,25 @@ public class ModuleAdaptiveTank : PartModule
 
     [KSPField(isPersistant = true, guiName = "Diameter", guiActiveEditor = true,
         groupName = PAWName, groupDisplayName = PAWDispName)]
-    [UI_FloatEdit(scene = UI_Scene.Editor)]
+    [UI_FloatEdit(sigFigs = 4, useSI = true, unit = "m", scene = UI_Scene.Editor)]
     public float diameter;
 
     [KSPField(isPersistant = true, guiName = "Height", guiActiveEditor = true,
         groupName = PAWName, groupDisplayName = PAWDispName)]
-    [UI_FloatEdit(scene = UI_Scene.Editor)]
+    [UI_FloatEdit(sigFigs = 4, useSI = true, unit = "m", scene = UI_Scene.Editor)]
     public float height;
 
     #endregion
 
-    #region internal state
+    #region configuration
 
-    public const string CoreStackAnchorName = "__ATCoreStack";
+    [KSPField] public float dimensionIncrementLarge = 1f;
+    [KSPField] public float dimensionIncrementSmall = 0.25f;
+    [KSPField] public float dimensionIncrementSlide = 0.01f;
+
+    #endregion
+
+    #region internal state
 
     public SegmentStacker stacker = new();
     protected SegmentStack currentStack;
@@ -41,6 +53,7 @@ public class ModuleAdaptiveTank : PartModule
     {
         Debug.Log("OnStart called");
         LinkPAWElements();
+        InitializeConfigurablePAWParameters();
         UpdatePAWLimits();
         Restack();
     }
@@ -59,14 +72,18 @@ public class ModuleAdaptiveTank : PartModule
         Fields[nameof(height)].AddSelfAndSymmetryListener(OnSizeModified);
     }
 
+    protected void InitializeConfigurablePAWParameters()
+    {
+        Fields[nameof(diameter)].AsEditor<UI_FloatEdit>().SetIncrements(dimensionIncrementLarge,
+            dimensionIncrementSmall, dimensionIncrementSlide);
+        Fields[nameof(height)].AsEditor<UI_FloatEdit>().SetIncrements(dimensionIncrementLarge,
+            dimensionIncrementSmall, dimensionIncrementSlide);
+    }
+
     protected void UpdatePAWLimits()
     {
-        var diamCtrl = Fields[nameof(diameter)].AsEditor<UI_FloatEdit>();
-        diamCtrl.minValue = 0.5f;
-        diamCtrl.maxValue = 5f;
-        var heightCtrl = Fields[nameof(height)].AsEditor<UI_FloatEdit>();
-        heightCtrl.minValue = 0.5f;
-        heightCtrl.maxValue = 10f;
+        Fields[nameof(diameter)].AsEditor<UI_FloatEdit>().SetMinMax(0.5f, 5f);
+        Fields[nameof(height)].AsEditor<UI_FloatEdit>().SetMinMax(0.5f, 10f);
     }
 
     protected void OnSizeModified(BaseField f, object obj)
