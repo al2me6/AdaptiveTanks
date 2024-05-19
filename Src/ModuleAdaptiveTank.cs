@@ -50,17 +50,28 @@ public class ModuleAdaptiveTank : PartModule
     {
     }
 
+    public override void OnIconCreate() => InitializeConfigurationAndModel();
+
     public override void OnStart(StartState state)
     {
-        Debug.Log("OnStart called");
-        LinkPAWElements();
-        InitializeConfigurablePAWParameters();
-        UpdatePAWLimits();
-        Restack();
+        InitializeConfigurationAndModel();
+        InitializeUI();
     }
 
     public void OnDestroy()
     {
+    }
+
+    protected void InitializeConfigurationAndModel()
+    {
+        Restack();
+    }
+
+    protected void InitializeUI()
+    {
+        LinkPAWElements();
+        InitializeConfigurablePAWParameters();
+        UpdatePAWLimits();
     }
 
     #endregion
