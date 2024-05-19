@@ -12,7 +12,7 @@ public enum SegmentKind
     nose = 2,
     mount = 4,
     cap = nose | mount,
-    interstage = 8
+    intertank = 8
 }
 
 public class SegmentDef : IRepeatedConfigNode
