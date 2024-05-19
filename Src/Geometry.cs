@@ -2,16 +2,16 @@
 
 namespace AdaptiveTanks;
 
-public class Geometry
+public static class Geometry
 {
     public const string RootAnchorName = "__ATRoot";
 
-    public static Transform GetOrCreateRootAnchor(Part part) =>
+    public static Transform GetOrCreateRootAnchor(this Part part) =>
         part.transform.Find("model").FindOrCreateChild(RootAnchorName);
 
-    public static Transform GetOrCreateAnchor(Part part, string name)
+    public static Transform GetOrCreateAnchor(this Part part, string name)
     {
-        var root = GetOrCreateRootAnchor(part);
+        var root = part.GetOrCreateRootAnchor();
         return root.FindOrCreateChild(name);
     }
 }

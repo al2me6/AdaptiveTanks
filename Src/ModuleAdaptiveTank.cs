@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using AdaptiveTanks.Extensions;
+using UnityEngine;
 
 namespace AdaptiveTanks;
 
@@ -98,7 +99,7 @@ public class ModuleAdaptiveTank : PartModule
     protected void UpdateStacker()
     {
         stacker.NormalizedHeight = height / diameter;
-        stacker.CoreSegmentSet = Library.Segments.Values.First(); // TODO slider
+        stacker.CoreSegmentDef = Library.Segments.Values.First(); // TODO slider
     }
 
     public void Restack()
@@ -107,6 +108,14 @@ public class ModuleAdaptiveTank : PartModule
         var newStack = stacker.Build();
         newStack.RealizeGeometry(part, CoreStackAnchorName, diameter, currentStack);
         currentStack = newStack;
+        RecenterStack();
+    }
+
+    protected void RecenterStack()
+    {
+        var extentCenter = (currentStack.NormalizedExtent.x + currentStack.NormalizedExtent.y) /
+            2f * diameter;
+        part.GetOrCreateRootAnchor().localPosition = Vector3.down * extentCenter;
     }
 
     #endregion

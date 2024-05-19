@@ -8,20 +8,20 @@ public readonly record struct CoreSolution(List<int> Stack, float Height);
 
 public class SegmentStacker
 {
-    private SegmentDef _coreSegmentSet;
+    private SegmentDef _coreSegmentDef;
 
-    public SegmentDef CoreSegmentSet
+    public SegmentDef CoreSegmentDef
     {
-        get => _coreSegmentSet;
+        get => _coreSegmentDef;
         set
         {
             if (value.kind != SegmentKind.body)
                 Debug.LogError($"attempted to set {value.kind} segment {value.name} as core");
-            _coreSegmentSet = value;
+            _coreSegmentDef = value;
         }
     }
 
-    protected float CoreSegmentHeights(int i) => CoreSegmentSet.AspectRatios[i];
+    protected float CoreSegmentHeights(int i) => CoreSegmentDef.AspectRatios[i];
 
     public float NormalizedHeight { get; set; }
 
@@ -41,7 +41,7 @@ public class SegmentStacker
             var bestSegment = -1;
             var bestNewRemainder = float.PositiveInfinity;
 
-            for (var i = 0; i < CoreSegmentSet.AspectRatios.Count; ++i)
+            for (var i = 0; i < CoreSegmentDef.AspectRatios.Count; ++i)
             {
                 var newRemainder = Mathf.Abs(remainder - CoreSegmentHeights(i));
                 if (newRemainder < bestNewRemainder)
@@ -51,7 +51,7 @@ public class SegmentStacker
                 }
             }
 
-            var addedHeight = CoreSegmentSet.AspectRatios[bestSegment];
+            var addedHeight = CoreSegmentDef.AspectRatios[bestSegment];
             // Check if the new segment would overshoot too far. If so, it's better to stop here.
             if (addedHeight < 2f * remainder)
             {
@@ -127,6 +127,6 @@ public class SegmentStacker
             currentBaseline += CoreSegmentHeights(placement.ModelIndex) * placement.Stretch;
         }
 
-        return new SegmentStack(CoreSegmentSet, placements);
+        return new SegmentStack(CoreSegmentDef, placements, new Vector2(0f, CoreHeight));
     }
 }

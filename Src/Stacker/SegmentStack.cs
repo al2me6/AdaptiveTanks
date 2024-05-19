@@ -11,7 +11,8 @@ public readonly record struct SegmentPlacement(
 
 public record SegmentStack(
     SegmentDef CoreSegmentDef,
-    List<SegmentPlacement> SegmentPlacements)
+    List<SegmentPlacement> SegmentPlacements,
+    Vector2 NormalizedExtent)
 {
     protected void RealizeGeometryFromScratch(Transform anchor, float diameter)
     {
@@ -42,7 +43,7 @@ public record SegmentStack(
 
     public void RealizeGeometry(Part part, string anchorName, float diameter, SegmentStack previous)
     {
-        var anchor = Geometry.GetOrCreateAnchor(part, anchorName);
+        var anchor = part.GetOrCreateAnchor(anchorName);
 
         // TODO: adjust existing stack instead of spawning new stack.
         anchor.ClearChildren();
