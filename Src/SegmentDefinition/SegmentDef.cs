@@ -23,12 +23,12 @@ public class SegmentDef : IRepeatedConfigNode
     [Persistent] public SegmentKind kind;
     public readonly List<SegmentModel> models = [];
 
-    public List<float> aspectRatios { get; private set; }
+    public List<float> AspectRatios { get; private set; }
 
     private void PreProcess()
     {
         models.Sort((a, b) => a.nativeAspectRatio.CompareTo(b.nativeAspectRatio));
-        aspectRatios = models.Select(model => model.nativeAspectRatio).ToList();
+        AspectRatios = models.Select(model => model.nativeAspectRatio).ToList();
     }
 
     private void Validate()
@@ -44,12 +44,12 @@ public class SegmentDef : IRepeatedConfigNode
             models.RemoveRange(1, models.Count - 1);
         }
 
-        for (var i = 0; i < aspectRatios.Count; ++i)
+        for (var i = 0; i < AspectRatios.Count; ++i)
         {
-            if (aspectRatios[i] > 0f) break;
+            if (AspectRatios[i] > 0f) break;
 
             Debug.LogError($"segment {name} contains model with invalid (<=0) aspect ratio");
-            aspectRatios[i] = 1f;
+            AspectRatios[i] = 1f;
         }
     }
 

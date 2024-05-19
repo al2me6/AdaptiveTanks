@@ -26,15 +26,15 @@ public class SegmentAsset : IRepeatedConfigNode
     public float MinDiameter => diameterRange.x;
     public float MaxDiameter => diameterRange.y;
 
-    public GameObject prefab { get; private set; }
+    public GameObject Prefab { get; private set; }
 
     public void Load(ConfigNode node)
     {
         ConfigNode.LoadObjectFromConfig(this, node);
         tex.AddRange(node.LoadAllFromNodes<SegmentAssetTexture>());
 
-        prefab = GameDatabase.Instance.GetModelPrefab(mu);
-        if (prefab == null) Debug.LogError($"asset {mu} was not found!");
+        Prefab = GameDatabase.Instance.GetModelPrefab(mu);
+        if (Prefab == null) Debug.LogError($"asset {mu} was not found!");
 
         Debug.Log(
             $"ASSET: {mu}, diam. {MinDiameter}-{nativeDiameter}-{MaxDiameter}, yMin {nativeYMin}");

@@ -98,7 +98,7 @@ public class ModuleAdaptiveTank : PartModule
     protected void UpdateStacker()
     {
         stacker.NormalizedHeight = height / diameter;
-        stacker.CoreSegmentSet = Library.segments.Values.First(); // TODO slider
+        stacker.CoreSegmentSet = Library.Segments.Values.First(); // TODO slider
     }
 
     public void Restack()

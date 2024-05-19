@@ -21,7 +21,7 @@ public class SegmentStacker
         }
     }
 
-    protected float CoreSegmentHeights(int i) => CoreSegmentSet.aspectRatios[i];
+    protected float CoreSegmentHeights(int i) => CoreSegmentSet.AspectRatios[i];
 
     public float NormalizedHeight { get; set; }
 
@@ -41,7 +41,7 @@ public class SegmentStacker
             var bestSegment = -1;
             var bestNewRemainder = float.PositiveInfinity;
 
-            for (var i = 0; i < CoreSegmentSet.aspectRatios.Count; ++i)
+            for (var i = 0; i < CoreSegmentSet.AspectRatios.Count; ++i)
             {
                 var newRemainder = Mathf.Abs(remainder - CoreSegmentHeights(i));
                 if (newRemainder < bestNewRemainder)
@@ -51,7 +51,7 @@ public class SegmentStacker
                 }
             }
 
-            var addedHeight = CoreSegmentSet.aspectRatios[bestSegment];
+            var addedHeight = CoreSegmentSet.AspectRatios[bestSegment];
             // Check if the new segment would overshoot too far. If so, it's better to stop here.
             if (addedHeight < 2f * remainder)
             {

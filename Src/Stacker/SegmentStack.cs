@@ -22,7 +22,7 @@ public record SegmentStack(
             var nativeDiameter = coreAsset.nativeDiameter;
             var effectiveDiameter = diameter / nativeDiameter;
 
-            var coreSegmentGO = Object.Instantiate(coreAsset.prefab);
+            var coreSegmentGO = Object.Instantiate(coreAsset.Prefab);
             coreSegmentGO.SetActive(true);
 
             var coreSegmentTransform = coreSegmentGO.transform;
