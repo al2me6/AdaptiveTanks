@@ -2,16 +2,16 @@
 
 public static class PAWExtensions
 {
-    public static void AddSelfAndSymmetryListener(this BaseFieldList fields, string fieldName,
+    public static void AddSelfAndSymmetryListener(this BaseField field,
         Callback<BaseField, object> action)
     {
-        fields[fieldName].uiControlEditor.onFieldChanged += action;
-        fields[fieldName].uiControlEditor.onSymmetryFieldChanged += action;
+        field.uiControlEditor.onFieldChanged += action;
+        field.uiControlEditor.onSymmetryFieldChanged += action;
     }
 
-    public static T AsEditorUICtrl<T>(this BaseFieldList fields, string fieldName)
+    public static T AsEditor<T>(this BaseField field)
         where T : UI_Control
     {
-        return fields[fieldName].uiControlEditor as T;
+        return field.uiControlEditor as T;
     }
 }

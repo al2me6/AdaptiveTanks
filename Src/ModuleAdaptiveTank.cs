@@ -55,16 +55,16 @@ public class ModuleAdaptiveTank : PartModule
 
     protected void LinkPAWElements()
     {
-        Fields.AddSelfAndSymmetryListener(nameof(diameter), OnSizeModified);
-        Fields.AddSelfAndSymmetryListener(nameof(height), OnSizeModified);
+        Fields[nameof(diameter)].AddSelfAndSymmetryListener(OnSizeModified);
+        Fields[nameof(height)].AddSelfAndSymmetryListener(OnSizeModified);
     }
 
     protected void UpdatePAWLimits()
     {
-        var diamCtrl = Fields.AsEditorUICtrl<UI_FloatEdit>(nameof(diameter));
+        var diamCtrl = Fields[nameof(diameter)].AsEditor<UI_FloatEdit>();
         diamCtrl.minValue = 0.5f;
         diamCtrl.maxValue = 5f;
-        var heightCtrl = Fields.AsEditorUICtrl<UI_FloatEdit>(nameof(height));
+        var heightCtrl = Fields[nameof(height)].AsEditor<UI_FloatEdit>();
         heightCtrl.minValue = 0.5f;
         heightCtrl.maxValue = 10f;
     }
