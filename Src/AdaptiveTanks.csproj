@@ -65,6 +65,7 @@
         <Compile Include="Utils\Debug.cs"/>
         <Compile Include="SegmentDefinition\SegmentAsset.cs"/>
         <Compile Include="SegmentDefinition\SegmentModel.cs"/>
+        <Compile Include="Utils\DragCubeTool.cs"/>
         <Compile Include="Utils\PAWExtensions.cs"/>
         <Compile Include="Utils\TransformUtils.cs"/>
     </ItemGroup>
