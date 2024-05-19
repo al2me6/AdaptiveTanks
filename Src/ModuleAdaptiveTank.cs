@@ -80,12 +80,14 @@ public class ModuleAdaptiveTank : PartModule
 
     protected void LinkPAWElements()
     {
+        if (!HighLogic.LoadedSceneIsEditor) return;
         Fields[nameof(diameter)].AddSelfAndSymmetryListener(OnSizeModified);
         Fields[nameof(height)].AddSelfAndSymmetryListener(OnSizeModified);
     }
 
     protected void InitializeConfigurablePAWParameters()
     {
+        if (!HighLogic.LoadedSceneIsEditor) return;
         Fields[nameof(diameter)].AsEditor<UI_FloatEdit>().SetIncrements(dimensionIncrementLarge,
             dimensionIncrementSmall, dimensionIncrementSlide);
         Fields[nameof(height)].AsEditor<UI_FloatEdit>().SetIncrements(dimensionIncrementLarge,
@@ -94,6 +96,7 @@ public class ModuleAdaptiveTank : PartModule
 
     protected void UpdatePAWLimits()
     {
+        if (!HighLogic.LoadedSceneIsEditor) return;
         Fields[nameof(diameter)].AsEditor<UI_FloatEdit>().SetMinMax(0.5f, 5f);
         Fields[nameof(height)].AsEditor<UI_FloatEdit>().SetMinMax(0.5f, 10f);
     }
