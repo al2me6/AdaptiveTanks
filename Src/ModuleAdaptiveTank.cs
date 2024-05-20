@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using AdaptiveTanks.Extensions;
+using KSP.UI;
 using UnityEngine;
 
 namespace AdaptiveTanks;
@@ -116,20 +117,39 @@ public class ModuleAdaptiveTank : PartModule
         stacker.CoreSegmentDef = Library.Segments.Values.First(); // TODO slider
     }
 
-    public void Restack()
+    protected void RealizeGeometryFromScratch(SegmentStack stack, Transform anchor)
     {
-        UpdateStacker();
-        var newStack = stacker.Build();
-        newStack.RealizeGeometry(part, CoreStackAnchorName, diameter, currentStack);
-        currentStack = newStack;
-        RecenterStack();
+        foreach (var (prefab, transformation) in stack.IterSegments(diameter))
+        {
+            var segmentMesh = Instantiate(prefab);
+            segmentMesh.SetActive(true);
+            segmentMesh.transform.NestToParent(anchor);
+            transformation.ApplyTo(segmentMesh);
+        }
+    }
+
+    protected void RealizeGeometry(SegmentStack previous)
+    {
+        var anchor = part.GetOrCreateAnchor(CoreStackAnchorName);
+
+        // TODO: adjust existing stack instead of spawning new stack.
+        anchor.ClearChildren();
+        RealizeGeometryFromScratch(currentStack, anchor);
     }
 
     protected void RecenterStack()
     {
-        var extentCenter = (currentStack.NormalizedExtent.x + currentStack.NormalizedExtent.y) /
-            2f * diameter;
+        var extentCenter = currentStack.ExtentCenter * diameter;
         part.GetOrCreateRootAnchor().localPosition = Vector3.down * extentCenter;
+    }
+
+    public void Restack()
+    {
+        UpdateStacker();
+        var oldStack = currentStack;
+        currentStack = stacker.Build();
+        RealizeGeometry(oldStack);
+        RecenterStack();
     }
 
     #endregion

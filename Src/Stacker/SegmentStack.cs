@@ -1,52 +1,43 @@
 using System.Collections.Generic;
-using KSP.UI;
 using UnityEngine;
 
 namespace AdaptiveTanks;
 
-public readonly record struct SegmentPlacement(
-    int ModelIndex,
-    float NormalizedBaseline,
-    float Stretch);
+public readonly record struct SegmentPlacement(int ModelIndex, float Baseline, float Stretch);
+
+public readonly record struct SegmentTransformation(
+    Vector3 RenormalizedScaling,
+    Vector3 RenormalizedOffset)
+{
+    public void ApplyTo(GameObject go)
+    {
+        go.transform.localScale = RenormalizedScaling;
+        go.transform.localPosition = RenormalizedOffset;
+    }
+}
 
 public record SegmentStack(
     SegmentDef CoreSegmentDef,
     List<SegmentPlacement> SegmentPlacements,
     Vector2 NormalizedExtent)
 {
-    protected void RealizeGeometryFromScratch(Transform anchor, float diameter)
+    public float ExtentCenter => (NormalizedExtent.x + NormalizedExtent.y) / 2f;
+
+    public IEnumerable<(GameObject prefab, SegmentTransformation transformation)> IterSegments(
+        float diameter)
     {
         foreach (var placement in SegmentPlacements)
         {
-            // TODO: select asset based on diameter.
-            var coreAsset = CoreSegmentDef.models[placement.ModelIndex].assets[0];
-            var nativeDiameter = coreAsset.nativeDiameter;
+            var asset = CoreSegmentDef.models[placement.ModelIndex].GetAssetForDiameter(diameter);
+            var nativeDiameter = asset.nativeDiameter;
             var effectiveDiameter = diameter / nativeDiameter;
-
-            var coreSegmentGO = Object.Instantiate(coreAsset.Prefab);
-            coreSegmentGO.SetActive(true);
-
-            var coreSegmentTransform = coreSegmentGO.transform;
-            coreSegmentTransform.NestToParent(anchor);
-
-            coreSegmentTransform.localScale =
-                new Vector3(1f, placement.Stretch, 1f) * effectiveDiameter;
-
-            var normalizedBaselinePosition = coreAsset.nativeYMin / nativeDiameter;
-            coreSegmentTransform.localPosition = new Vector3(
+            var scale = new Vector3(1f, placement.Stretch, 1f) * effectiveDiameter;
+            var normalizedSegmentBaseline = asset.nativeYMin / nativeDiameter;
+            var offset = new Vector3(
                 0f,
-                (placement.NormalizedBaseline - normalizedBaselinePosition * placement.Stretch) *
-                diameter,
+                (placement.Baseline - normalizedSegmentBaseline * placement.Stretch) * diameter,
                 0f);
+            yield return (asset.Prefab, new SegmentTransformation(scale, offset));
         }
-    }
-
-    public void RealizeGeometry(Part part, string anchorName, float diameter, SegmentStack previous)
-    {
-        var anchor = part.GetOrCreateAnchor(anchorName);
-
-        // TODO: adjust existing stack instead of spawning new stack.
-        anchor.ClearChildren();
-        RealizeGeometryFromScratch(anchor, diameter);
     }
 }

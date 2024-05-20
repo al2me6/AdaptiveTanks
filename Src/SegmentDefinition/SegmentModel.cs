@@ -11,6 +11,12 @@ public class SegmentModel : IRepeatedConfigNode
     [Persistent] public float maxDistortion = 1.2f;
     public readonly List<SegmentAsset> assets = [];
 
+    public SegmentAsset GetAssetForDiameter(float diameter)
+    {
+        // TODO implement
+        return assets[0];
+    }
+
     public void Load(ConfigNode node)
     {
         ConfigNode.LoadObjectFromConfig(this, node);

@@ -122,7 +122,7 @@ public class SegmentStacker
             var placement = new SegmentPlacement(coreSolution.Stack[i], currentBaseline,
                 coreStretches[i]);
             Debug.Log(
-                $"model {placement.ModelIndex} @ y = {placement.NormalizedBaseline}, stretch {placement.Stretch}");
+                $"model {placement.ModelIndex} @ y = {placement.Baseline}, stretch {placement.Stretch}");
             placements.Add(placement);
             currentBaseline += CoreSegmentHeights(placement.ModelIndex) * placement.Stretch;
         }
