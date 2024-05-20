@@ -113,13 +113,14 @@ public class ModuleAdaptiveTank : PartModule
 
     protected void UpdateStacker()
     {
-        stacker.NormalizedHeight = height / diameter;
+        stacker.TrueHeight = height;
+        stacker.Diameter = diameter;
         stacker.CoreSegmentDef = Library.Segments.Values.First(); // TODO slider
     }
 
     protected void RealizeGeometryFromScratch(SegmentStack stack, Transform anchor)
     {
-        foreach (var (prefab, transformation) in stack.IterSegments(diameter))
+        foreach (var (prefab, transformation) in stack.IterSegments())
         {
             var segmentMesh = Instantiate(prefab);
             segmentMesh.SetActive(true);
@@ -139,8 +140,7 @@ public class ModuleAdaptiveTank : PartModule
 
     protected void RecenterStack()
     {
-        var extentCenter = currentStack.ExtentCenter * diameter;
-        part.GetOrCreateRootAnchor().localPosition = Vector3.down * extentCenter;
+        part.GetOrCreateRootAnchor().localPosition = Vector3.down * currentStack.ExtentCenter;
     }
 
     public void Restack()

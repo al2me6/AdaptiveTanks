@@ -23,11 +23,13 @@ public class SegmentStacker
 
     protected float CoreSegmentHeights(int i) => CoreSegmentDef.AspectRatios[i];
 
-    public float NormalizedHeight { get; set; }
+    public float Diameter { get; set; }
+    public float TrueHeight { get; set; }
 
     protected float NoseHeight { get; private set; } = 0; // TODO calculate
     protected float MountHeight { get; private set; } = 0; //TODO calculate
 
+    public float NormalizedHeight => TrueHeight / Diameter;
     public float CapHeight => NoseHeight + MountHeight;
     public float CoreHeight => NormalizedHeight - CapHeight;
 
@@ -127,6 +129,6 @@ public class SegmentStacker
             currentBaseline += CoreSegmentHeights(placement.ModelIndex) * placement.Stretch;
         }
 
-        return new SegmentStack(CoreSegmentDef, placements, new Vector2(0f, CoreHeight));
+        return new SegmentStack(Diameter, CoreSegmentDef, placements, new Vector2(0f, CoreHeight));
     }
 }
