@@ -68,6 +68,7 @@
         <Compile Include="SegmentDefinition\SegmentModel.cs"/>
         <Compile Include="Utils\DragCubeTool.cs"/>
         <Compile Include="Utils\PAWExtensions.cs"/>
+        <Compile Include="Utils\AttachNodeUtils.cs"/>
         <Compile Include="Utils\TransformUtils.cs"/>
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>

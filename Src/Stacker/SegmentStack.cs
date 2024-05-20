@@ -23,6 +23,7 @@ public record SegmentStack(
     Vector2 NormalizedExtent)
 {
     public float ExtentCenter => (NormalizedExtent.x + NormalizedExtent.y) / 2f * Diameter;
+    public float HalfExtent => (NormalizedExtent.y - NormalizedExtent.x) / 2f * Diameter;
 
     public IEnumerable<(string mu, SegmentTransformation transformation)> IterSegments()
     {

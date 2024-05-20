@@ -7,12 +7,6 @@ namespace AdaptiveTanks;
 
 public class ModuleAdaptiveTank : PartModule
 {
-    #region constants
-
-    public const string CoreStackAnchorName = "__ATCoreStack";
-
-    #endregion
-
     #region PAW
 
     public const string PAWName = "AdaptiveTanks";
@@ -38,13 +32,6 @@ public class ModuleAdaptiveTank : PartModule
 
     #endregion
 
-    #region internal state
-
-    public SegmentStacker stacker = new();
-    protected SegmentStack currentStack;
-
-    # endregion
-
     #region lifecycle
 
     public override void OnLoad(ConfigNode node)
@@ -65,6 +52,7 @@ public class ModuleAdaptiveTank : PartModule
 
     protected void InitializeConfigurationAndModel()
     {
+        AddAttachNodes();
         Restack();
     }
 
@@ -111,6 +99,11 @@ public class ModuleAdaptiveTank : PartModule
 
     #region stack generation
 
+    public const string CoreStackAnchorName = "__ATCoreStack";
+
+    public SegmentStacker stacker = new();
+    protected SegmentStack currentStack;
+
     protected void UpdateStacker()
     {
         stacker.TrueHeight = height;
@@ -150,6 +143,31 @@ public class ModuleAdaptiveTank : PartModule
         currentStack = stacker.Build();
         RealizeGeometry(oldStack);
         RecenterStack();
+        UpdateAttachNodes();
+    }
+
+    #endregion
+
+    #region attach node management
+
+    public const string NodeStackTopId = "top";
+    public const string NodeStackBottomId = "bottom";
+
+    protected AttachNode nodeTop;
+    protected AttachNode nodeBottom;
+    protected AttachNode nodeSurface => part.srfAttachNode;
+
+    protected void AddAttachNodes()
+    {
+        nodeTop = part.AddStackAttachNode(NodeStackTopId, Vector3.up, Vector3.up);
+        nodeBottom = part.AddStackAttachNode(NodeStackBottomId, Vector3.down, Vector3.down);
+        part.AddSurfaceAttachNode(Vector3.forward, Vector3.back);
+    }
+
+    protected void UpdateAttachNodes()
+    {
+        nodeTop.MoveTo(Vector3.up * currentStack.HalfExtent);
+        nodeBottom.MoveTo(Vector3.down * currentStack.HalfExtent);
     }
 
     #endregion
