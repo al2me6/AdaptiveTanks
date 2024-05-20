@@ -120,9 +120,9 @@ public class ModuleAdaptiveTank : PartModule
 
     protected void RealizeGeometryFromScratch(SegmentStack stack, Transform anchor)
     {
-        foreach (var (prefab, transformation) in stack.IterSegments())
+        foreach (var (mu, transformation) in stack.IterSegments())
         {
-            var segmentMesh = Instantiate(prefab);
+            var segmentMesh = GameDatabase.Instance.GetModel(mu);
             segmentMesh.SetActive(true);
             segmentMesh.transform.NestToParent(anchor);
             transformation.ApplyTo(segmentMesh);

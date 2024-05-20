@@ -11,14 +11,14 @@ public class StyleDef : IRepeatedConfigNode
     public const string CoreNodeName = "CORE";
 
     [Persistent] public string name;
-    public List<string> bodies;
-    public List<string> cores;
+    public string[] bodies;
+    public string[] cores;
 
     public void Load(ConfigNode node)
     {
         ConfigNode.LoadObjectFromConfig(this, node);
-        bodies = node.LoadAllNamesFromNodes(BodyNodeName).ToList();
-        cores = node.LoadAllNamesFromNodes(CoreNodeName).ToList();
+        bodies = node.LoadAllNamesFromNodes(BodyNodeName).ToArray();
+        cores = node.LoadAllNamesFromNodes(CoreNodeName).ToArray();
 
         Debug.Log($"style {name}");
         Debug.Log($"bodies {string.Join(", ", bodies)}");

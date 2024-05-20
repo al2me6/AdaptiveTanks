@@ -59,7 +59,7 @@
         <Compile Include="Library.cs"/>
         <Compile Include="Stacker\SegmentStack.cs"/>
         <Compile Include="Stacker\SegmentStacker.cs"/>
-        <Compile Include="Styling\StyleDef.cs"/>
+        <Compile Include="StyleDefinition\StyleDef.cs"/>
         <Compile Include="Geometry.cs"/>
         <Compile Include="Utils\ConfigNodeExtensions.cs"/>
         <Compile Include="Utils\CSharpPolyfill.cs"/>

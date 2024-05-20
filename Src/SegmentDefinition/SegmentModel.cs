@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+using System.Linq;
 using AdaptiveTanks.Extensions;
 
 namespace AdaptiveTanks;
@@ -9,7 +9,7 @@ public class SegmentModel : IRepeatedConfigNode
 
     [Persistent] public float nativeAspectRatio = 1f;
     [Persistent] public float maxDistortion = 1.2f;
-    public readonly List<SegmentAsset> assets = [];
+    public SegmentAsset[] assets;
 
     public SegmentAsset GetAssetForDiameter(float diameter)
     {
@@ -20,7 +20,7 @@ public class SegmentModel : IRepeatedConfigNode
     public void Load(ConfigNode node)
     {
         ConfigNode.LoadObjectFromConfig(this, node);
-        assets.AddRange(node.LoadAllFromNodes<SegmentAsset>());
+        assets = node.LoadAllFromNodes<SegmentAsset>().ToArray();
 
         Debug.Log($"MODEL: aspect ratio {nativeAspectRatio}");
     }

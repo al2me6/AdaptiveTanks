@@ -21,8 +21,6 @@ public class SegmentStacker
         }
     }
 
-    protected float CoreSegmentHeights(int i) => CoreSegmentDef.AspectRatios[i];
-
     public float Diameter { get; set; }
     public float TrueHeight { get; set; }
 
@@ -45,7 +43,7 @@ public class SegmentStacker
 
             for (var i = 0; i < CoreSegmentDef.AspectRatios.Count; ++i)
             {
-                var newRemainder = Mathf.Abs(remainder - CoreSegmentHeights(i));
+                var newRemainder = Mathf.Abs(remainder - CoreSegmentDef.AspectRatios[i]);
                 if (newRemainder < bestNewRemainder)
                 {
                     bestSegment = i;
@@ -121,12 +119,12 @@ public class SegmentStacker
         Debug.Log("stack solution:");
         for (var i = 0; i < coreSolution.Stack.Count; ++i)
         {
-            var placement = new SegmentPlacement(coreSolution.Stack[i], currentBaseline,
-                coreStretches[i]);
+            var placement = new SegmentPlacement(
+                coreSolution.Stack[i], currentBaseline, coreStretches[i]);
             Debug.Log(
-                $"model {placement.ModelIndex} @ y = {placement.Baseline}, stretch {placement.Stretch}");
+                $"model {placement.ModelIdx} @ y = {placement.Baseline}, stretch {placement.Stretch}");
             placements.Add(placement);
-            currentBaseline += CoreSegmentHeights(placement.ModelIndex) * placement.Stretch;
+            currentBaseline += CoreSegmentDef.AspectRatios[placement.ModelIdx] * placement.Stretch;
         }
 
         return new SegmentStack(Diameter, CoreSegmentDef, placements, new Vector2(0f, CoreHeight));
