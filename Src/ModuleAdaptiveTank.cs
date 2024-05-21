@@ -52,7 +52,7 @@ public class ModuleAdaptiveTank : PartModule
 
     protected void InitializeConfigurationAndModel()
     {
-        AddAttachNodes();
+        BuildAttachNodes();
         Restack();
     }
 
@@ -157,8 +157,9 @@ public class ModuleAdaptiveTank : PartModule
     protected AttachNode nodeBottom;
     protected AttachNode nodeSurface => part.srfAttachNode;
 
-    protected void AddAttachNodes()
+    protected void BuildAttachNodes()
     {
+        part.attachNodes.Clear();
         nodeTop = part.AddStackAttachNode(NodeStackTopId, Vector3.up, Vector3.up);
         nodeBottom = part.AddStackAttachNode(NodeStackBottomId, Vector3.down, Vector3.down);
         part.AddSurfaceAttachNode(Vector3.forward, Vector3.back);

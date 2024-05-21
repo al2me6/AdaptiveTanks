@@ -62,7 +62,11 @@ public static class TransformNodeUtils
         var translateTarget = attachedPartIsChild ? node.attachedPart : part;
         // If we move ourselves, then we get pushed back.
         var translationDirection = attachedPartIsChild ? 1 : -1;
-        translateTarget.attPos0 += localDelta * translationDirection;
-        translateTarget.transform.position += worldDelta * translationDirection;
+
+        // Gotmachine (private communication): `orgPos` is the part position relative to the root
+        // part and is what is relied on generally. `attPos` and `attPos0` are legacy things that
+        // aren't used and shouldn't be relied upon.
+        translateTarget.orgPos =
+            translateTarget.transform.position += worldDelta * translationDirection;
     }
 }
