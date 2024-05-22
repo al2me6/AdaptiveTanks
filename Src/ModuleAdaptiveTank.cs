@@ -123,6 +123,7 @@ public class ModuleAdaptiveTank : PartModule
             var segmentMesh = GameDatabase.Instance.GetModel(mu);
             segmentMesh.SetActive(true);
             segmentMesh.transform.NestToParent(anchor);
+            segmentMesh.transform.SetLayerRecursive(part.gameObject.layer);
             transformation.ApplyTo(segmentMesh);
         }
     }
