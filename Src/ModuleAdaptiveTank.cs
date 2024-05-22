@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using AdaptiveTanks.Extensions;
 using KSP.UI;
 using UnityEngine;
@@ -155,13 +156,18 @@ public class ModuleAdaptiveTank : PartModule
 
     #region attach node management
 
+    // Nodes with these names (e.g. node_stack_top, _bottom) will be used as the stack nodes.
     [KSPField] public string nodeStackTopId = "top";
     [KSPField] public string nodeStackBottomId = "bottom";
 
-    #nullable disable
+    // For every increase in diameter by this amount, increment the size of the attachment node by 1.
+    [KSPField] public float attachNodeSizeIncrementFactor = 1.25f;
+    [KSPField] public int maxAttachNodeSize = 6;
+
+#nullable disable
     protected AttachNode nodeTop;
     protected AttachNode nodeBottom;
-    #nullable enable
+#nullable enable
     protected AttachNode nodeSurface => part.srfAttachNode;
 
     protected void FindStackAttachNodes()
@@ -170,11 +176,15 @@ public class ModuleAdaptiveTank : PartModule
         nodeBottom = part.attachNodes.Find(node => node.id == nodeStackBottomId);
     }
 
+    protected int CalculateAttachNodeSize() =>
+        Math.Min((int)(diameter / attachNodeSizeIncrementFactor), maxAttachNodeSize);
+
     protected void UpdateAttachNodes()
     {
         nodeTop.MoveTo(Vector3.up * currentStack!.HalfExtent);
         nodeBottom.MoveTo(Vector3.down * currentStack.HalfExtent);
         nodeSurface.MoveTo(Vector3.right * currentStack.Diameter / 2f);
+        nodeTop.size = nodeBottom.size = nodeSurface.size = CalculateAttachNodeSize();
     }
 
     protected void MoveSurfaceAttachedChildren(SegmentStack? oldStack)
