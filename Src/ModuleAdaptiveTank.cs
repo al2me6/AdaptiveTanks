@@ -5,6 +5,8 @@ using UnityEngine;
 
 namespace AdaptiveTanks;
 
+#nullable enable
+
 public class ModuleAdaptiveTank : PartModule
 {
     #region PAW
@@ -52,7 +54,7 @@ public class ModuleAdaptiveTank : PartModule
 
     protected void InitializeConfigurationAndModel()
     {
-        BuildAttachNodes();
+        FindStackAttachNodes();
         Restack();
     }
 
@@ -122,7 +124,7 @@ public class ModuleAdaptiveTank : PartModule
         }
     }
 
-    protected void RealizeGeometry(SegmentStack previous)
+    protected void RealizeGeometry(SegmentStack? previous)
     {
         var anchor = part.GetOrCreateAnchor(CoreStackAnchorName);
 
@@ -144,31 +146,54 @@ public class ModuleAdaptiveTank : PartModule
         RealizeGeometry(oldStack);
         RecenterStack();
         UpdateAttachNodes();
+        MoveSurfaceAttachedChildren(oldStack);
     }
 
     #endregion
 
     #region attach node management
 
-    public const string NodeStackTopId = "top";
-    public const string NodeStackBottomId = "bottom";
+    [KSPField] public string nodeStackTopId = "top";
+    [KSPField] public string nodeStackBottomId = "bottom";
 
     protected AttachNode nodeTop;
     protected AttachNode nodeBottom;
     protected AttachNode nodeSurface => part.srfAttachNode;
 
-    protected void BuildAttachNodes()
+    protected void FindStackAttachNodes()
     {
-        part.attachNodes.Clear();
-        nodeTop = part.AddStackAttachNode(NodeStackTopId, Vector3.up, Vector3.up);
-        nodeBottom = part.AddStackAttachNode(NodeStackBottomId, Vector3.down, Vector3.down);
-        part.AddSurfaceAttachNode(Vector3.forward, Vector3.back);
+        nodeTop = part.attachNodes.Find(node => node.id == nodeStackTopId);
+        nodeBottom = part.attachNodes.Find(node => node.id == nodeStackBottomId);
     }
 
     protected void UpdateAttachNodes()
     {
         nodeTop.MoveTo(Vector3.up * currentStack.HalfExtent);
         nodeBottom.MoveTo(Vector3.down * currentStack.HalfExtent);
+        nodeSurface.MoveTo(Vector3.right * currentStack.Diameter / 2f);
+    }
+
+    protected void MoveSurfaceAttachedChildren(SegmentStack? oldStack)
+    {
+        if (oldStack == null) return;
+
+        var deltaRadius = (diameter - oldStack.Diameter) / 2f;
+
+        foreach (var child in part.IterSurfaceAttachedChildren())
+        {
+            var worldPos = child.transform.position;
+            var localPos = transform.InverseTransformPoint(worldPos);
+            if (deltaRadius != 0)
+            {
+                var localPushNrm =
+                    Vector3.ProjectOnPlane(localPos, Vector3.up).normalized * deltaRadius;
+                var worldPushNrm = transform.TransformVector(localPushNrm);
+                child.transform.position += worldPushNrm;
+            }
+            // TODO: take local geometry at position of attachment into account.
+            // Current logic only works for cylindrical objects.
+            // TODO: shift vertically on height change. This will depend on cap vs body.
+        }
     }
 
     #endregion
