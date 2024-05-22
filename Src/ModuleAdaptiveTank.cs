@@ -104,13 +104,16 @@ public class ModuleAdaptiveTank : PartModule
     public const string CoreStackAnchorName = "__ATCoreStack";
 
     public SegmentStacker stacker = new();
-    protected SegmentStack currentStack;
+    protected SegmentStack? currentStack;
 
-    protected void UpdateStacker()
+    protected SegmentStack? RunStacker()
     {
         stacker.TrueHeight = height;
         stacker.Diameter = diameter;
         stacker.CoreSegmentDef = Library.Segments.Values.First(); // TODO slider
+        var oldStack = currentStack;
+        currentStack = stacker.Build();
+        return oldStack;
     }
 
     protected void RealizeGeometryFromScratch(SegmentStack stack, Transform anchor)
@@ -130,19 +133,17 @@ public class ModuleAdaptiveTank : PartModule
 
         // TODO: adjust existing stack instead of spawning new stack.
         anchor.ClearChildren();
-        RealizeGeometryFromScratch(currentStack, anchor);
+        RealizeGeometryFromScratch(currentStack!, anchor);
     }
 
     protected void RecenterStack()
     {
-        part.GetOrCreateRootAnchor().localPosition = Vector3.down * currentStack.ExtentCenter;
+        part.GetOrCreateRootAnchor().localPosition = Vector3.down * currentStack!.ExtentCenter;
     }
 
     public void Restack()
     {
-        UpdateStacker();
-        var oldStack = currentStack;
-        currentStack = stacker.Build();
+        var oldStack = RunStacker();
         RealizeGeometry(oldStack);
         RecenterStack();
         UpdateAttachNodes();
@@ -156,8 +157,10 @@ public class ModuleAdaptiveTank : PartModule
     [KSPField] public string nodeStackTopId = "top";
     [KSPField] public string nodeStackBottomId = "bottom";
 
+    #nullable disable
     protected AttachNode nodeTop;
     protected AttachNode nodeBottom;
+    #nullable enable
     protected AttachNode nodeSurface => part.srfAttachNode;
 
     protected void FindStackAttachNodes()
@@ -168,7 +171,7 @@ public class ModuleAdaptiveTank : PartModule
 
     protected void UpdateAttachNodes()
     {
-        nodeTop.MoveTo(Vector3.up * currentStack.HalfExtent);
+        nodeTop.MoveTo(Vector3.up * currentStack!.HalfExtent);
         nodeBottom.MoveTo(Vector3.down * currentStack.HalfExtent);
         nodeSurface.MoveTo(Vector3.right * currentStack.Diameter / 2f);
     }
