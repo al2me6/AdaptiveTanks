@@ -6,7 +6,7 @@ using AdaptiveTanks.Extensions;
 namespace AdaptiveTanks;
 
 [Flags]
-public enum SegmentKind
+public enum SegmentRoleSerialize
 {
     body = 1,
     nose = 2,
@@ -15,15 +15,34 @@ public enum SegmentKind
     intertank = 8
 }
 
-public class SegmentDef : IRepeatedConfigNode
+public static class SegmentRoleSerializeExtensions
 {
-    public string ConfigNodeName() => "AT_SEGMENT_DEF";
+    public static bool Is(this SegmentRoleSerialize serialized, SegmentRole role)
+    {
+        return serialized.HasFlag(role switch
+        {
+            SegmentRole.Nose => SegmentRoleSerialize.nose,
+            SegmentRole.Body => SegmentRoleSerialize.body,
+            SegmentRole.Mount => SegmentRoleSerialize.mount,
+            _ => throw new ArgumentOutOfRangeException(nameof(role))
+        });
+    }
+}
+
+[LibraryLoad]
+public class SegmentDef : IRepeatedConfigNode, INamedConfigNode
+{
+    public string ConfigNodeName() => "AT_SEGMENT";
 
     [Persistent] public string name;
-    [Persistent] public SegmentKind kind;
+    [Persistent] protected string displayName;
+    [Persistent] public SegmentRoleSerialize role;
     public readonly List<SegmentModel> models = [];
 
+    public string Name() => name;
+    public string DisplayName => displayName ?? name;
     public List<float> AspectRatios { get; private set; }
+    public float AspectRatio => AspectRatios[0];
 
     private void PreProcess()
     {
@@ -38,9 +57,9 @@ public class SegmentDef : IRepeatedConfigNode
             Debug.LogError($"segment {name} must have at least one valid model");
         }
 
-        if (kind != SegmentKind.body && models.Count > 1)
+        if (role != SegmentRoleSerialize.body && models.Count > 1)
         {
-            Debug.LogError($"{kind} segment {name} supports one asset group only; deleting rest");
+            Debug.LogError($"{role} segment {name} supports one asset group only; deleting rest");
             models.RemoveRange(1, models.Count - 1);
         }
 
@@ -57,7 +76,7 @@ public class SegmentDef : IRepeatedConfigNode
     {
         ConfigNode.LoadObjectFromConfig(this, node);
         models.AddRange(node.LoadAllFromNodes<SegmentModel>());
-        Debug.Log($"SEGMENT {name}, kind {kind.ToString()}");
+        Debug.Log($"SEGMENT {name}, kind {role.ToString()}");
 
         PreProcess();
         Validate();

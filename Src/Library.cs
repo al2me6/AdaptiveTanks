@@ -1,26 +1,40 @@
+using System;
 using System.Collections.Generic;
+using System.Reflection;
 using AdaptiveTanks.Extensions;
 
 namespace AdaptiveTanks;
 
-public static class Library
-{
-    public static readonly Dictionary<string, SegmentDef> Segments = new();
-    public static readonly Dictionary<string, StyleDef> Styles = new();
+[AttributeUsage(AttributeTargets.Class, Inherited = false)]
+public class LibraryLoadAttribute : Attribute;
 
+public static class LibraryLoader
+{
     public static void ModuleManagerPostLoad()
     {
-        foreach (var def in GameDatabase.Instance.LoadAllFromNodes<SegmentDef>())
+        foreach (var t in Assembly.GetExecutingAssembly().GetTypes())
         {
-            Segments[def.name] = def;
+            if (Attribute.GetCustomAttribute(t, typeof(LibraryLoadAttribute)) == null) continue;
+            typeof(Library<>)
+                .MakeGenericType([t])
+                .GetMethod("Load")?
+                .Invoke(null, null);
+        }
+    }
+}
+
+public static class Library<T> where T : IRepeatedConfigNode, INamedConfigNode, new()
+{
+    private static readonly Dictionary<string, T> items = new();
+    public static T Get(string name) => items[name];
+
+    public static void Load()
+    {
+        foreach (var item in GameDatabase.Instance.LoadAllFromNodes<T>())
+        {
+            items[item.Name()] = item;
         }
 
-        foreach (var def in GameDatabase.Instance.LoadAllFromNodes<StyleDef>())
-        {
-            Styles[def.name] = def;
-        }
-
-        Debug.Log($"loaded {Segments.Count} segments", true);
-        Debug.Log($"loaded {Styles.Count} styles", true);
+        Debug.Log($"LIBRARY: loaded {items.Count} `{typeof(T).Name}`s", true);
     }
 }

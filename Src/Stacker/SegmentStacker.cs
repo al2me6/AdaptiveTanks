@@ -1,49 +1,62 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
 namespace AdaptiveTanks;
 
-public readonly record struct CoreSolution(List<int> Stack, float Height);
-
-public class SegmentStacker
+public readonly record struct SelectedSegmentDefs(
+    SegmentDef Nose,
+    SegmentDef Body,
+    SegmentDef Mount
+)
 {
-    private SegmentDef _coreSegmentDef;
-
-    public SegmentDef CoreSegmentDef
+    public SegmentDef this[SegmentRole role] => role switch
     {
-        get => _coreSegmentDef;
-        set
+        SegmentRole.Nose => Nose,
+        SegmentRole.Body => Body,
+        SegmentRole.Mount => Mount,
+        _ => throw new IndexOutOfRangeException()
+    };
+};
+
+public readonly record struct StackerParameters(
+    float Height,
+    float Diameter,
+    SelectedSegmentDefs SkinSegments,
+    SelectedSegmentDefs CoreSegments
+);
+
+public readonly record struct BodySolution(SegmentDef segment, List<int> Stack, float Height)
+{
+    public void WriteToPlacements(
+        ref readonly List<SegmentPlacement> placements, List<float> stretches, float baseline)
+    {
+        for (var i = 0; i < Stack.Count; ++i)
         {
-            if (value.kind != SegmentKind.body)
-                Debug.LogError($"attempted to set {value.kind} segment {value.name} as core");
-            _coreSegmentDef = value;
+            var placement =
+                new SegmentPlacement(SegmentRole.Body, Stack[i], baseline, stretches[i]);
+            placements.Add(placement);
+            baseline += segment.AspectRatios[placement.ModelIdx] * placement.Stretch;
         }
     }
+}
 
-    public float Diameter { get; set; }
-    public float TrueHeight { get; set; }
-
-    protected float NoseHeight { get; private set; } = 0; // TODO calculate
-    protected float MountHeight { get; private set; } = 0; //TODO calculate
-
-    public float NormalizedHeight => TrueHeight / Diameter;
-    public float CapHeight => NoseHeight + MountHeight;
-    public float CoreHeight => NormalizedHeight - CapHeight;
-
-    protected CoreSolution BuildCore()
+public static class SegmentStacker
+{
+    private static BodySolution SolveBodyPreliminary(float height, SegmentDef segment)
     {
         List<int> stack = [];
         float runningHeight = 0;
-        while (runningHeight < CoreHeight)
+        while (runningHeight < height)
         {
-            var remainder = CoreHeight - runningHeight;
+            var remainder = height - runningHeight;
             var bestSegment = -1;
             var bestNewRemainder = float.PositiveInfinity;
 
-            for (var i = 0; i < CoreSegmentDef.AspectRatios.Count; ++i)
+            for (var i = 0; i < segment.AspectRatios.Count; ++i)
             {
-                var newRemainder = Mathf.Abs(remainder - CoreSegmentDef.AspectRatios[i]);
+                var newRemainder = Mathf.Abs(remainder - segment.AspectRatios[i]);
                 if (newRemainder < bestNewRemainder)
                 {
                     bestSegment = i;
@@ -51,7 +64,7 @@ public class SegmentStacker
                 }
             }
 
-            var addedHeight = CoreSegmentDef.AspectRatios[bestSegment];
+            var addedHeight = segment.AspectRatios[bestSegment];
             // Check if the new segment would overshoot too far. If so, it's better to stop here.
             if (addedHeight < 2f * remainder)
             {
@@ -62,12 +75,12 @@ public class SegmentStacker
                 break;
         }
 
-        return new CoreSolution(stack, runningHeight);
+        return new BodySolution(segment, stack, runningHeight);
     }
 
-    protected List<float> ComputeCoreStretching(CoreSolution solution)
+    private static List<float> ComputeBodyStretching(float height, BodySolution solution)
     {
-        var requiredStretch = CoreHeight / solution.Height;
+        var requiredStretch = height / solution.Height;
         var stretches = Enumerable.Repeat(requiredStretch, solution.Stack.Count).ToList();
 
         // var isClamped = Enumerable.Repeat(false, solution.Stack.Count).ToList();
@@ -109,24 +122,32 @@ public class SegmentStacker
         return stretches;
     }
 
-    public SegmentStack Build()
+    public static SegmentStack SolveStack(
+        float height, float diameter, SelectedSegmentDefs segments)
     {
-        var coreSolution = BuildCore();
-        var coreStretches = ComputeCoreStretching(coreSolution);
+        var normalizedHeight = height / diameter;
+        var noseHeight = segments.Nose.AspectRatio;
+        var mountHeight = segments.Mount.AspectRatio;
+        var bodyHeight = normalizedHeight - noseHeight - mountHeight;
 
-        List<SegmentPlacement> placements = new(coreSolution.Stack.Count);
-        var currentBaseline = 0f;
-        Debug.Log("stack solution:");
-        for (var i = 0; i < coreSolution.Stack.Count; ++i)
-        {
-            var placement = new SegmentPlacement(
-                coreSolution.Stack[i], currentBaseline, coreStretches[i]);
-            Debug.Log(
-                $"model {placement.ModelIdx} @ y = {placement.Baseline}, stretch {placement.Stretch}");
-            placements.Add(placement);
-            currentBaseline += CoreSegmentDef.AspectRatios[placement.ModelIdx] * placement.Stretch;
-        }
+        var bodySolution = SolveBodyPreliminary(bodyHeight, segments.Body);
+        var bodyStretches = ComputeBodyStretching(bodyHeight, bodySolution);
 
-        return new SegmentStack(Diameter, CoreSegmentDef, placements, new Vector2(0f, CoreHeight));
+        List<SegmentPlacement> placements = new(bodySolution.Stack.Count + 2);
+        placements.Add(new SegmentPlacement(SegmentRole.Mount, 0, -mountHeight));
+        bodySolution.WriteToPlacements(ref placements, bodyStretches, 0f);
+        placements.Add(new SegmentPlacement(SegmentRole.Nose, 0, bodyHeight));
+
+
+        var extent = new Vector2(-mountHeight, bodyHeight + noseHeight);
+
+        return new SegmentStack(diameter, segments, placements, extent);
+    }
+
+    public static SkinAndCore<SegmentStack> SolveSkinAndCoreSeparately(StackerParameters parameters)
+    {
+        return new SkinAndCore<SegmentStack>(
+            SolveStack(parameters.Height, parameters.Diameter, parameters.SkinSegments),
+            SolveStack(parameters.Height, parameters.Diameter, parameters.CoreSegments));
     }
 }

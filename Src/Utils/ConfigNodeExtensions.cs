@@ -7,6 +7,11 @@ public interface IRepeatedConfigNode : IConfigNode
     public string ConfigNodeName();
 }
 
+public interface INamedConfigNode : IConfigNode
+{
+    public string Name();
+}
+
 public static class ConfigNodeUtils
 {
     public static IEnumerable<T> LoadAllFromNodes<T>(this GameDatabase db)

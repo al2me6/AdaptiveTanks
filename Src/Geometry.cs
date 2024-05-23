@@ -16,3 +16,5 @@ public static class Geometry
         return root.FindOrCreateChild(name);
     }
 }
+
+public record SkinAndCore<T>(T Skin, T Core);

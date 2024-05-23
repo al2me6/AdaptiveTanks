@@ -8,7 +8,7 @@ public class SegmentModel : IRepeatedConfigNode
     public string ConfigNodeName() => "MODEL";
 
     [Persistent] public float nativeAspectRatio = 1f;
-    [Persistent] public float maxDistortion = 1.2f;
+    [Persistent] public float maxDistortion = 0f;
     public SegmentAsset[] assets;
 
     public SegmentAsset GetAssetForDiameter(float diameter)
