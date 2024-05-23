@@ -25,16 +25,18 @@ public static class LibraryLoader
 
 public static class Library<T> where T : IRepeatedConfigNode, INamedConfigNode, new()
 {
-    private static readonly Dictionary<string, T> items = new();
-    public static T Get(string name) => items[name];
+    public static IReadOnlyDictionary<string, T> Items { get; private set; }
+    public static T Get(string name) => Items[name];
 
     public static void Load()
     {
+        var items = new Dictionary<string, T>();
         foreach (var item in GameDatabase.Instance.LoadAllFromNodes<T>())
         {
             items[item.Name()] = item;
         }
 
-        Debug.Log($"LIBRARY: loaded {items.Count} `{typeof(T).Name}`s", true);
+        Items = items;
+        Debug.Log($"LIBRARY: loaded {Items.Count} `{typeof(T).Name}`s", true);
     }
 }
