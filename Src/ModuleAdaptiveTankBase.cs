@@ -14,7 +14,7 @@ public abstract class ModuleAdaptiveTankBase : PartModule
     public override void OnStart(StartState state)
     {
         InitializeConfigurationAndModel();
-        if (HighLogic.LoadedSceneIsEditor) InitializeEditorPAW();
+        InitializeEditorPAW();
     }
 
     protected virtual void InitializeConfigurationAndModel()
@@ -54,6 +54,7 @@ public abstract class ModuleAdaptiveTankBase : PartModule
     {
         Fields[nameof(diameter)].AddSelfAndSymmetryListener(OnDimensionModified);
         Fields[nameof(height)].AddSelfAndSymmetryListener(OnDimensionModified);
+
         Fields[nameof(diameter)].AsEditor<UI_FloatEdit>().SetIncrements(dimensionIncrementLarge,
             dimensionIncrementSmall, dimensionIncrementSlide);
         Fields[nameof(height)].AsEditor<UI_FloatEdit>().SetIncrements(dimensionIncrementLarge,

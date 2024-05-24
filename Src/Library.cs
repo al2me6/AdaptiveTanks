@@ -27,6 +27,7 @@ public static class Library<T> where T : IRepeatedConfigNode, INamedConfigNode, 
 {
     public static IReadOnlyDictionary<string, T> Items { get; private set; }
     public static T Get(string name) => Items[name];
+    public static bool HasItem(string name) => Items.ContainsKey(name);
 
     public static void Load()
     {

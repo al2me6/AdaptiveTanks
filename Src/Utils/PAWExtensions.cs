@@ -1,4 +1,7 @@
-﻿namespace AdaptiveTanks.Extensions;
+﻿using System.Collections.Generic;
+using System.Linq;
+
+namespace AdaptiveTanks.Extensions;
 
 public static class PAWExtensions
 {
@@ -26,5 +29,12 @@ public static class PAWExtensions
         edit.incrementLarge = large;
         edit.incrementSmall = small;
         edit.incrementSlide = slide;
+    }
+
+    public static void SetOptions(this UI_ChooseOption choose, IEnumerable<string> options,
+        IEnumerable<string> displays)
+    {
+        choose.options = options.ToArray();
+        choose.display = displays.ToArray();
     }
 }

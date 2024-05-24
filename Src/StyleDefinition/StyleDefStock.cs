@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using AdaptiveTanks.Extensions;
 
 namespace AdaptiveTanks;
@@ -8,12 +9,25 @@ public abstract class StyleDefStock : INamedConfigNode
     public const string SegmentNodeName = "SEGMENT";
 
     [Persistent] public string name;
+    [Persistent] public string displayName;
     protected string[] segments;
 
     public string Name() => name;
+    public string DisplayName => displayName ?? name;
     public SegmentDef[] Noses { get; private set; }
     public SegmentDef[] Bodies { get; private set; }
     public SegmentDef[] Mounts { get; private set; }
+
+    public SegmentDef[] GetAvailableSegments(SegmentRole role)
+    {
+        return role switch
+        {
+            SegmentRole.Nose => Noses,
+            SegmentRole.Body => Bodies,
+            SegmentRole.Mount => Mounts,
+            _ => throw new ArgumentOutOfRangeException(nameof(role))
+        };
+    }
 
     public void Load(ConfigNode node)
     {
