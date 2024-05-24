@@ -20,7 +20,7 @@ public class SegmentAsset : IRepeatedConfigNode
     [Persistent] public string mu;
     public SegmentAssetTexture[] tex;
     [Persistent] public float nativeDiameter = 1f;
-    [Persistent] public float nativeYMin;
+    [Persistent] public float nativeBaseline;
     [Persistent] public Vector2 diameterRange = new(0f, float.PositiveInfinity);
 
     public float MinDiameter => diameterRange.x;
@@ -31,7 +31,7 @@ public class SegmentAsset : IRepeatedConfigNode
         ConfigNode.LoadObjectFromConfig(this, node);
         tex = node.LoadAllFromNodes<SegmentAssetTexture>().ToArray();
         Debug.Log(
-            $"ASSET: {mu}, diam. {MinDiameter}-{nativeDiameter}-{MaxDiameter}, yMin {nativeYMin}");
+            $"ASSET: {mu}, diam. {MinDiameter}-{nativeDiameter}-{MaxDiameter}, yMin {nativeBaseline}");
     }
 
     public void Save(ConfigNode node)

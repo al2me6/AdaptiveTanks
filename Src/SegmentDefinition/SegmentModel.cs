@@ -9,6 +9,7 @@ public class SegmentModel : IRepeatedConfigNode
 
     [Persistent] public float nativeAspectRatio = 1f;
     [Persistent] public float maxDistortion = 0f;
+    [Persistent] public bool nativelyUpsideDown = false;
     public SegmentAsset[] assets;
 
     public SegmentAsset GetAssetForDiameter(float diameter)

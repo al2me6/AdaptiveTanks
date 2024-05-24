@@ -35,16 +35,34 @@ public record SegmentStack(
     {
         foreach (var placement in SegmentPlacements)
         {
-            var asset = segmentDefs[placement.Role].models[placement.ModelIdx]
-                .GetAssetForDiameter(Diameter);
+            var model = segmentDefs[placement.Role].models[placement.ModelIdx];
+            var asset = model.GetAssetForDiameter(Diameter);
+
             var nativeDiameter = asset.nativeDiameter;
             var effectiveDiameter = Diameter / nativeDiameter;
-            var scale = new Vector3(1f, placement.Stretch, 1f) * effectiveDiameter;
-            var normalizedSegmentBaseline = asset.nativeYMin / nativeDiameter;
+            var nativeHeight = nativeDiameter * model.nativeAspectRatio;
+
+            var nativelyUpsideDown = model.nativelyUpsideDown;
+
+            var nativeBaseline = asset.nativeBaseline;
+            (nativeBaseline, var nativeTop) = nativelyUpsideDown
+                ? (nativeBaseline - nativeHeight, nativeBaseline)
+                : (nativeBaseline, nativeBaseline + nativeHeight);
+
+            var shouldFlip = (placement.Role == SegmentRole.Nose && nativelyUpsideDown) ||
+                             (placement.Role == SegmentRole.Body && nativelyUpsideDown) ||
+                             (placement.Role == SegmentRole.Mount && !nativelyUpsideDown);
+            var flipMultiplier = shouldFlip ? -1 : 1;
+
+            var scale = new Vector3(1f, placement.Stretch * flipMultiplier, 1f) * effectiveDiameter;
+
+            var flippedNativeBaseline = shouldFlip ? -nativeTop : nativeBaseline;
+            var normalizedBaseline = flippedNativeBaseline / nativeDiameter;
             var offset = new Vector3(
                 0f,
-                (placement.Baseline - normalizedSegmentBaseline * placement.Stretch) * Diameter,
+                (placement.Baseline - normalizedBaseline * placement.Stretch) * Diameter,
                 0f);
+
             yield return (asset.mu, new SegmentTransformation(scale, offset));
         }
     }
