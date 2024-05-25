@@ -1,5 +1,6 @@
-# Ignore all dlls
+# Ignore all dlls and zips
 *.dll
+*.zip
 
 # Part thumbnail cache
 @thumbs/
