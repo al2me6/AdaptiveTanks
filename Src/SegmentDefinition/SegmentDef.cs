@@ -36,52 +36,33 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
     [Persistent] public string name;
     [Persistent] protected string displayName;
     [Persistent] public SegmentRoleSerialize role;
-    public List<Model> models = [];
-
-    public string ItemName() => name;
-    public string DisplayName => displayName ?? name;
-    public List<float> AspectRatios { get; private set; }
-    public float AspectRatio => AspectRatios[0];
+    public Asset[] assets;
 
     public override void Load(ConfigNode node)
     {
         base.Load(node);
-        models = node.LoadAllFromNodes<Model>().ToList();
-        PreProcess();
-        Validate();
+        assets = node.LoadAllFromNodes<Asset>().OrderBy(asset => asset.AspectRatio).ToArray();
+        if (assets.Length == 0)
+        {
+            Debug.LogWarning($"segment definition `{name}` contained no assets; adding default");
+            assets = [new Asset()];
+        }
     }
 
     public override void Save(ConfigNode node)
     {
         base.Save(node);
-        node.WriteAllToNodes(models);
+        node.WriteAllToNodes(assets);
     }
 
-    private void PreProcess()
-    {
-        models.Sort((a, b) => a.nativeAspectRatio.CompareTo(b.nativeAspectRatio));
-        AspectRatios = models.Select(model => model.nativeAspectRatio).ToList();
-    }
+    public string ItemName() => name;
+    public string DisplayName => displayName ?? name;
 
-    private void Validate()
-    {
-        if (models.Count == 0)
-        {
-            Debug.LogError($"segment {name} must have at least one valid model");
-        }
+    public Asset this[int idx] => assets[idx];
 
-        if (role != SegmentRoleSerialize.body && models.Count > 1)
-        {
-            Debug.LogError($"{role} segment {name} supports one asset group only; deleting rest");
-            models.RemoveRange(1, models.Count - 1);
-        }
+    public IEnumerable<int> GetAssetsForDiameter(float diameter) => Enumerable
+        .Range(0, assets.Length)
+        .Where(idx => assets[idx].SupportsDiameter(diameter));
 
-        for (var i = 0; i < AspectRatios.Count; ++i)
-        {
-            if (AspectRatios[i] > 0f) break;
-
-            Debug.LogError($"segment {name} contains model with invalid (<=0) aspect ratio");
-            AspectRatios[i] = 1f;
-        }
-    }
+    public int GetAnAssetForDiameter(float diameter) => GetAssetsForDiameter(diameter).First();
 }

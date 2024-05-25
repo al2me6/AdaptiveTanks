@@ -21,8 +21,8 @@ public readonly record struct SelectedSegmentDefs(
 };
 
 public readonly record struct StackerParameters(
-    float Height,
     float Diameter,
+    float Height,
     SelectedSegmentDefs SkinSegments,
     SelectedSegmentDefs CoreSegments
 );
@@ -37,38 +37,41 @@ public readonly record struct BodySolution(SegmentDef segment, List<int> Stack, 
             var placement =
                 new SegmentPlacement(SegmentRole.Body, Stack[i], baseline, stretches[i]);
             placements.Add(placement);
-            baseline += segment.AspectRatios[placement.ModelIdx] * placement.Stretch;
+            baseline += segment[placement.AssetIdx].AspectRatio * placement.Stretch;
         }
     }
 }
 
 public static class SegmentStacker
 {
-    private static BodySolution SolveBodyPreliminary(float height, SegmentDef segment)
+    private static BodySolution SolveBodyPreliminary(
+        float diameter, float height, SegmentDef segment)
     {
+        var availableAssets = segment.GetAssetsForDiameter(diameter).ToArray();
+
         List<int> stack = [];
         float runningHeight = 0;
         while (runningHeight < height)
         {
             var remainder = height - runningHeight;
-            var bestSegment = -1;
+            var bestAsset = -1;
             var bestNewRemainder = float.PositiveInfinity;
 
-            for (var i = 0; i < segment.AspectRatios.Count; ++i)
+            foreach (var idx in availableAssets)
             {
-                var newRemainder = Mathf.Abs(remainder - segment.AspectRatios[i]);
+                var newRemainder = Mathf.Abs(remainder - segment[idx].AspectRatio);
                 if (newRemainder < bestNewRemainder)
                 {
-                    bestSegment = i;
+                    bestAsset = idx;
                     bestNewRemainder = newRemainder;
                 }
             }
 
-            var addedHeight = segment.AspectRatios[bestSegment];
+            var addedHeight = segment[bestAsset].AspectRatio;
             // Check if the new segment would overshoot too far. If so, it's better to stop here.
             if (addedHeight < 2f * remainder)
             {
-                stack.Add(bestSegment);
+                stack.Add(bestAsset);
                 runningHeight += addedHeight;
             }
             else
@@ -123,21 +126,25 @@ public static class SegmentStacker
     }
 
     public static SegmentStack SolveStack(
-        float height, float diameter, SelectedSegmentDefs segments)
+        float diameter, float height, SelectedSegmentDefs segments)
     {
         var normalizedHeight = height / diameter;
-        var noseHeight = segments.Nose.AspectRatio;
-        var mountHeight = segments.Mount.AspectRatio;
+
+        // Todo warn if multiple?
+        var noseIdx = segments.Nose.GetAnAssetForDiameter(diameter);
+        var mountIdx = segments.Mount.GetAnAssetForDiameter(diameter);
+
+        var noseHeight = segments.Nose[noseIdx].AspectRatio;
+        var mountHeight = segments.Mount[mountIdx].AspectRatio;
         var bodyHeight = normalizedHeight - noseHeight - mountHeight;
 
-        var bodySolution = SolveBodyPreliminary(bodyHeight, segments.Body);
+        var bodySolution = SolveBodyPreliminary(diameter, bodyHeight, segments.Body);
         var bodyStretches = ComputeBodyStretching(bodyHeight, bodySolution);
 
         List<SegmentPlacement> placements = new(bodySolution.Stack.Count + 2);
-        placements.Add(new SegmentPlacement(SegmentRole.Mount, 0, -mountHeight));
+        placements.Add(new SegmentPlacement(SegmentRole.Mount, mountIdx, -mountHeight));
         bodySolution.WriteToPlacements(ref placements, bodyStretches, 0f);
-        placements.Add(new SegmentPlacement(SegmentRole.Nose, 0, bodyHeight));
-
+        placements.Add(new SegmentPlacement(SegmentRole.Nose, noseIdx, bodyHeight));
 
         var extent = new Vector2(-mountHeight, bodyHeight + noseHeight);
 
@@ -147,7 +154,7 @@ public static class SegmentStacker
     public static SkinAndCore<SegmentStack> SolveSkinAndCoreSeparately(StackerParameters parameters)
     {
         return new SkinAndCore<SegmentStack>(
-            SolveStack(parameters.Height, parameters.Diameter, parameters.SkinSegments),
-            SolveStack(parameters.Height, parameters.Diameter, parameters.CoreSegments));
+            SolveStack(parameters.Diameter, parameters.Height, parameters.SkinSegments),
+            SolveStack(parameters.Diameter, parameters.Height, parameters.CoreSegments));
     }
 }

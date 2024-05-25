@@ -136,8 +136,8 @@ public abstract class ModuleAdaptiveTankBase : PartModule
     {
         var oldDiameter = currentStacks?.Diameter();
         var parameters = new StackerParameters(
-            height,
             diameter,
+            height,
             GetSelectedSkinSegments(),
             GetSelectedCoreSegments()
         );
