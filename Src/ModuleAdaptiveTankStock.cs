@@ -13,19 +13,27 @@ public class ModuleAdaptiveTankStock : ModuleAdaptiveTankBase
 
     public override void OnLoad(ConfigNode node)
     {
-        LoadAvailableStyles(node);
+        skinStyles = node.LoadAllNamesFromNodes(SkinStyleNodeName).ToArray();
+        coreStyles = node.LoadAllNamesFromNodes(CoreStyleNodeName).ToArray();
+
+        if ((skinStyles.Length == 0 || coreStyles.Length == 0) &&
+            part.partInfo?.partPrefab is Part prefab)
+        {
+            var prefabPM = prefab.FindModuleImplementing<ModuleAdaptiveTankStock>();
+            skinStyles = prefabPM.skinStyles;
+            coreStyles = prefabPM.coreStyles;
+        }
     }
 
-    protected override void InitializeConfigurationAndModel()
+    protected override void InitializeConfigurationAndModelOverride()
     {
         if (string.IsNullOrEmpty(skinStyle) || !skinStyles.Contains(skinStyle))
             skinStyle = skinStyles[0];
         if (string.IsNullOrEmpty(coreStyle) || !coreStyles.Contains(coreStyle))
             coreStyle = coreStyles[0];
+
         UpdateAvailableVariants(Layer.Skin);
         UpdateAvailableVariants(Layer.Core);
-
-        base.InitializeConfigurationAndModel();
     }
 
     #endregion
@@ -86,7 +94,6 @@ public class ModuleAdaptiveTankStock : ModuleAdaptiveTankBase
 
     protected override void UpdateDimensionLimits()
     {
-        if (!HighLogic.LoadedSceneIsEditor) return;
         // TODO calculate.
         Fields[nameof(diameter)].AsEditor<UI_FloatEdit>().SetMinMax(0.5f, 5f);
         Fields[nameof(height)].AsEditor<UI_FloatEdit>().SetMinMax(0.5f, 10f);
@@ -162,20 +169,11 @@ public class ModuleAdaptiveTankStock : ModuleAdaptiveTankBase
     public string[] skinStyles;
     public string[] coreStyles;
 
-
-
     public StyleDefStock SkinStyle => Library<StyleDefStockSkin>.Get(skinStyle);
     public StyleDefStock CoreStyle => Library<StyleDefStockCore>.Get(coreStyle);
 
-    protected void LoadAvailableStyles(ConfigNode node)
-    {
-        skinStyles = node.LoadAllNamesFromNodes(SkinStyleNodeName).ToArray();
-        coreStyles = node.LoadAllNamesFromNodes(CoreStyleNodeName).ToArray();
-    }
-
     public override SelectedSegmentDefs GetSelectedSkinSegments()
     {
-        Debug.Log($"skin nose `{skinNoseVariant}`");
         return new SelectedSegmentDefs(
             Library<SegmentDef>.Get(skinNoseVariant),
             Library<SegmentDef>.Get(skinBodyVariant),

@@ -11,14 +11,25 @@ public abstract class ModuleAdaptiveTankBase : PartModule
 
     public override void OnIconCreate() => InitializeConfigurationAndModel();
 
+    public override void OnInitialize() => InitializeConfigurationAndModel();
+
     public override void OnStart(StartState state)
     {
         InitializeConfigurationAndModel();
         InitializeEditorPAW();
     }
 
-    protected virtual void InitializeConfigurationAndModel()
+    protected virtual void InitializeConfigurationAndModelOverride()
     {
+    }
+
+    protected bool _configAndModelInitialized = false;
+
+    protected void InitializeConfigurationAndModel()
+    {
+        if (_configAndModelInitialized) return;
+        _configAndModelInitialized = true;
+        InitializeConfigurationAndModelOverride();
         FindStackAttachNodes();
         Restack();
     }
