@@ -61,6 +61,11 @@ public abstract class ModuleAdaptiveTankBase : PartModule
     [UI_FloatEdit(sigFigs = 4, useSI = true, unit = "m", scene = UI_Scene.Editor)]
     public float height;
 
+    [KSPField(guiName = "Worst distortion", guiActiveEditor = true,
+        groupName = PAWName, groupDisplayName = PAWDispName)]
+    [UI_Label]
+    public string sWorstDistortion = "";
+
     protected void InitializeDimensionSelectors()
     {
         Fields[nameof(diameter)].AddSelfAndSymmetryListener(OnDimensionModified);
@@ -120,6 +125,10 @@ public abstract class ModuleAdaptiveTankBase : PartModule
     {
         RealizeGeometry(currentStacks.Skin, SkinStackAnchorName);
         RealizeGeometry(currentStacks.Core, CoreStackAnchorName);
+
+        var skinDistortion = currentStacks.Skin.WorstDistortion();
+        var coreDistortion = currentStacks.Core.WorstDistortion();
+        sWorstDistortion = $"skin {skinDistortion:P1}; core {coreDistortion:P1}";
     }
 
     protected void RecenterStack()

@@ -62,6 +62,18 @@ public record SegmentStack(
             yield return (asset.mu, new SegmentTransformation(scale, offset));
         }
     }
+
+    public float WorstDistortion()
+    {
+        var worstDelta = 0f;
+        foreach (var placement in SegmentPlacements)
+        {
+            var delta = placement.Stretch - 1f;
+            if (Mathf.Abs(delta) > Mathf.Abs(worstDelta)) worstDelta = delta;
+        }
+
+        return worstDelta;
+    }
 }
 
 public static class SkinAndCoreExtensions
