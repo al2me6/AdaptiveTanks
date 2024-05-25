@@ -130,32 +130,25 @@ public class ModuleAdaptiveTankStock : ModuleAdaptiveTankBase
     {
         if (layer == Layer.Skin)
         {
-            UpdateVariantSlider(nameof(skinNoseVariant), Layer.Skin, Role.Nose);
-            UpdateVariantSlider(nameof(skinBodyVariant), Layer.Skin, Role.Body);
-            UpdateVariantSlider(nameof(skinMountVariant), Layer.Skin, Role.Mount);
+            UpdateVariantSlider(nameof(skinNoseVariant), SkinStyle, Role.Nose);
+            UpdateVariantSlider(nameof(skinBodyVariant), SkinStyle, Role.Body);
+            UpdateVariantSlider(nameof(skinMountVariant), SkinStyle, Role.Mount);
         }
         else
         {
-            UpdateVariantSlider(nameof(coreNoseVariant), Layer.Core, Role.Nose);
-            UpdateVariantSlider(nameof(coreBodyVariant), Layer.Core, Role.Body);
-            UpdateVariantSlider(nameof(coreMountVariant), Layer.Core, Role.Mount);
+            UpdateVariantSlider(nameof(coreNoseVariant), CoreStyle, Role.Nose);
+            UpdateVariantSlider(nameof(coreBodyVariant), CoreStyle, Role.Body);
+            UpdateVariantSlider(nameof(coreMountVariant), CoreStyle, Role.Mount);
         }
     }
 
-    protected void UpdateVariantSlider(string fieldName, Layer layer, Role role)
+    protected void UpdateVariantSlider(string fieldName, StyleDefStock style, Role role)
     {
-        var style = layer switch
-        {
-            Layer.Skin => SkinStyle,
-            Layer.Core => CoreStyle,
-            _ => throw new ArgumentOutOfRangeException(nameof(layer))
-        };
         var variants = style.GetAvailableSegments(role);
         var field = Fields[fieldName];
         field.AsEditor<UI_ChooseOption>().SetOptions(
             variants.Select(v => v.name), variants.Select(v => v.DisplayName));
         field.guiActiveEditor = variants.Length > 1;
-        Debug.Log($"fieldinfo name `{field.FieldInfo.Name}`");
         field.FieldInfo.SetValue(this, variants[0].name);
     }
 
