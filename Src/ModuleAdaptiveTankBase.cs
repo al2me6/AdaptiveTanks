@@ -31,7 +31,7 @@ public abstract class ModuleAdaptiveTankBase : PartModule
         _configAndModelInitialized = true;
         InitializeConfigurationAndModelOverride();
         FindStackAttachNodes();
-        Restack();
+        ReStack();
     }
 
     protected virtual void InitializeEditorPAW()
@@ -76,7 +76,7 @@ public abstract class ModuleAdaptiveTankBase : PartModule
 
     protected virtual void OnDimensionModified(BaseField f, object obj)
     {
-        Restack();
+        ReStack();
     }
 
     #endregion
@@ -132,7 +132,7 @@ public abstract class ModuleAdaptiveTankBase : PartModule
 
     public abstract SkinAndCore<SegmentStack> SolveStack(StackerParameters parameters);
 
-    public void Restack()
+    public void ReStack()
     {
         var oldDiameter = currentStacks?.Diameter();
         var parameters = new StackerParameters(

@@ -200,7 +200,7 @@ public class ModuleAdaptiveTankStock : ModuleAdaptiveTankBase
     protected void OnVariantModified(BaseField f, object obj)
     {
         UpdateDimensionLimits();
-        Restack();
+        ReStack();
     }
 
     #endregion
