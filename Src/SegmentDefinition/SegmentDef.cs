@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AdaptiveTanks.Extensions;
+using ROUtils.DataTypes;
 
 namespace AdaptiveTanks;
 
@@ -29,20 +30,32 @@ public static class SegmentRoleSerializeExtensions
     }
 }
 
-[LibraryLoad]
-public class SegmentDef : IRepeatedConfigNode, INamedConfigNode
+[LibraryLoad("AT_SEGMENT")]
+public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
 {
-    public string ConfigNodeName() => "AT_SEGMENT";
-
     [Persistent] public string name;
     [Persistent] protected string displayName;
     [Persistent] public SegmentRoleSerialize role;
-    public readonly List<SegmentModel> models = [];
+    public List<Model> models = [];
 
-    public string Name() => name;
+    public string ItemName() => name;
     public string DisplayName => displayName ?? name;
     public List<float> AspectRatios { get; private set; }
     public float AspectRatio => AspectRatios[0];
+
+    public override void Load(ConfigNode node)
+    {
+        base.Load(node);
+        models = node.LoadAllFromNodes<Model>().ToList();
+        PreProcess();
+        Validate();
+    }
+
+    public override void Save(ConfigNode node)
+    {
+        base.Save(node);
+        node.WriteAllToNodes(models);
+    }
 
     private void PreProcess()
     {
@@ -70,21 +83,5 @@ public class SegmentDef : IRepeatedConfigNode, INamedConfigNode
             Debug.LogError($"segment {name} contains model with invalid (<=0) aspect ratio");
             AspectRatios[i] = 1f;
         }
-    }
-
-    public void Load(ConfigNode node)
-    {
-        ConfigNode.LoadObjectFromConfig(this, node);
-        models.AddRange(node.LoadAllFromNodes<SegmentModel>());
-        Debug.Log($"SEGMENT {name}, kind {role.ToString()}");
-
-        PreProcess();
-        Validate();
-    }
-
-    public void Save(ConfigNode node)
-    {
-        ConfigNode.CreateConfigFromObject(this, node);
-        node.WriteAllToNodes(models);
     }
 }

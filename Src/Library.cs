@@ -1,40 +1,64 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
-using AdaptiveTanks.Extensions;
 
 namespace AdaptiveTanks;
 
+/// <summary>
+/// Register the annotated type to be loaded by the <see cref="Library"/>.
+/// The type must implement <see cref="ILibraryLoad"/>.
+/// </summary>
+/// <param name="nodeName">The name of the top-level nodes to parse.</param>
+/// <param name="loadOrder">Override the loading order, e.g. if Library&lt;U> needs to read
+/// Library&lt;T> when loading. The ordering within the same pass number is unspecified.</param>
 [AttributeUsage(AttributeTargets.Class, Inherited = false)]
-public class LibraryLoadAttribute : Attribute;
+public class LibraryLoadAttribute(string nodeName, int loadOrder = 0) : Attribute
+{
+    public readonly string NodeName = nodeName;
+    public readonly int LoadOrder = loadOrder;
+};
+
+public interface ILibraryLoad : IConfigNode
+{
+    public string ItemName();
+}
 
 public static class LibraryLoader
 {
     public static void ModuleManagerPostLoad()
     {
+        List<(Type t, LibraryLoadAttribute attr)> libraryTypes = new();
         foreach (var t in Assembly.GetExecutingAssembly().GetTypes())
         {
-            if (Attribute.GetCustomAttribute(t, typeof(LibraryLoadAttribute)) == null) continue;
+            var attr = Attribute.GetCustomAttribute(t, typeof(LibraryLoadAttribute));
+            if (attr is LibraryLoadAttribute loadAttr) libraryTypes.Add((t, loadAttr));
+        }
+
+        foreach (var load in libraryTypes.OrderBy(ta => ta.attr.LoadOrder))
+        {
             typeof(Library<>)
-                .MakeGenericType([t])
+                .MakeGenericType([load.t])
                 .GetMethod("Load")?
-                .Invoke(null, null);
+                .Invoke(null, [load.attr.NodeName]);
         }
     }
 }
 
-public static class Library<T> where T : IRepeatedConfigNode, INamedConfigNode, new()
+public static class Library<T> where T : ILibraryLoad, new()
 {
     public static IReadOnlyDictionary<string, T> Items { get; private set; }
     public static T Get(string name) => Items[name];
-    public static bool HasItem(string name) => Items.ContainsKey(name);
 
-    public static void Load()
+    public static void Load(string nodeName)
     {
         var items = new Dictionary<string, T>();
-        foreach (var item in GameDatabase.Instance.LoadAllFromNodes<T>())
+
+        foreach (var node in GameDatabase.Instance.GetConfigNodes(nodeName))
         {
-            items[item.Name()] = item;
+            var item = new T();
+            item.Load(node);
+            items[item.ItemName()] = item;
         }
 
         Items = items;

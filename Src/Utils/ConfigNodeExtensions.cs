@@ -2,34 +2,12 @@ using System.Collections.Generic;
 
 namespace AdaptiveTanks.Extensions;
 
-public interface IRepeatedConfigNode : IConfigNode
-{
-    public string ConfigNodeName();
-}
-
-public interface INamedConfigNode : IConfigNode
-{
-    public string Name();
-}
-
 public static class ConfigNodeUtils
 {
-    public static IEnumerable<T> LoadAllFromNodes<T>(this GameDatabase db)
-        where T : IRepeatedConfigNode, new()
-    {
-        var nodeName = new T().ConfigNodeName();
-        foreach (var node in db.GetConfigNodes(nodeName))
-        {
-            T item = new();
-            item.Load(node);
-            yield return item;
-        }
-    }
-
     public static IEnumerable<T> LoadAllFromNodes<T>(this ConfigNode node)
-        where T : IRepeatedConfigNode, new()
+        where T : IConfigNode, new()
     {
-        var nodeName = new T().ConfigNodeName();
+        var nodeName = typeof(T).Name;
         for (var i = 0; i < node.CountNodes; ++i)
         {
             if (node.nodes[i].name != nodeName) continue;
@@ -40,10 +18,15 @@ public static class ConfigNodeUtils
     }
 
     public static void WriteAllToNodes<T>(this ConfigNode node, IEnumerable<T> items)
-        where T : IRepeatedConfigNode
+        where T : IConfigNode
     {
+        var nodeName = typeof(T).Name;
         foreach (var item in items)
-            node.AddNode(item.ConfigNodeName(), ConfigNode.CreateConfigFromObject(item));
+        {
+            var child = new ConfigNode();
+            item.Save(child);
+            node.AddNode(nodeName, child);
+        }
     }
 
     public static IEnumerable<string> LoadAllNamesFromNodes(this ConfigNode node, string nodeName)
