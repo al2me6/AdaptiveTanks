@@ -18,7 +18,7 @@
         <DebugType>portable</DebugType>
         <Optimize>false</Optimize>
         <PlatformTarget>x64</PlatformTarget>
-        <OutputPath>..\GameData\AdaptiveTanks\Plugins\</OutputPath>
+        <OutputPath>..\..\GameData\AdaptiveTanks\Plugins\</OutputPath>
         <DefineConstants>DEBUG;TRACE</DefineConstants>
         <ErrorReport>prompt</ErrorReport>
         <WarningLevel>4</WarningLevel>
@@ -27,7 +27,7 @@
         <DebugType>none</DebugType>
         <Optimize>true</Optimize>
         <PlatformTarget>x64</PlatformTarget>
-        <OutputPath>..\GameData\AdaptiveTanks\Plugins\</OutputPath>
+        <OutputPath>..\..\GameData\AdaptiveTanks\Plugins\</OutputPath>
         <DefineConstants>TRACE</DefineConstants>
         <ErrorReport>prompt</ErrorReport>
         <WarningLevel>4</WarningLevel>
@@ -71,6 +71,9 @@
         <Compile Include="Utils\PAWExtensions.cs"/>
         <Compile Include="Utils\AttachNodeUtils.cs"/>
         <Compile Include="Utils\TransformUtils.cs"/>
+    </ItemGroup>
+    <ItemGroup>
+      <Folder Include="AdaptiveTanks\" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
 </Project>
