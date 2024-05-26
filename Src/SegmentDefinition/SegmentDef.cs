@@ -60,9 +60,8 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
 
     public Asset this[int idx] => assets[idx];
 
-    public IEnumerable<int> GetAssetsForDiameter(float diameter) => Enumerable
-        .Range(0, assets.Length)
-        .Where(idx => assets[idx].SupportsDiameter(diameter));
+    public IEnumerable<Asset> GetAssetsForDiameter(float diameter) =>
+        assets.Where(a => a.SupportsDiameter(diameter));
 
-    public int GetAnAssetForDiameter(float diameter) => GetAssetsForDiameter(diameter).First();
+    public Asset GetFirstAssetForDiameter(float diameter) => GetAssetsForDiameter(diameter).First();
 }

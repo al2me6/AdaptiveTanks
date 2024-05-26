@@ -27,7 +27,7 @@ public readonly record struct StackerParameters(
     SelectedSegmentDefs CoreSegments
 );
 
-public readonly record struct BodySolution(SegmentDef segment, List<int> Stack, float Height)
+public readonly record struct BodySolution(List<Asset> Stack, float Height)
 {
     public void WriteToPlacements(
         ref readonly List<SegmentPlacement> placements, List<float> stretches, float baseline)
@@ -37,37 +37,34 @@ public readonly record struct BodySolution(SegmentDef segment, List<int> Stack, 
             var placement =
                 new SegmentPlacement(SegmentRole.Body, Stack[i], baseline, stretches[i]);
             placements.Add(placement);
-            baseline += segment[placement.AssetIdx].AspectRatio * placement.Stretch;
+            baseline += placement.Asset.AspectRatio * placement.Stretch;
         }
     }
 }
 
 public static class SegmentStacker
 {
-    private static BodySolution SolveBodyPreliminary(
-        float diameter, float height, SegmentDef segment)
+    private static BodySolution SolveBodyPreliminary(Asset[] availableAssets, float height)
     {
-        var availableAssets = segment.GetAssetsForDiameter(diameter).ToArray();
-
-        List<int> stack = [];
+        List<Asset> stack = [];
         float runningHeight = 0;
         while (runningHeight < height)
         {
             var remainder = height - runningHeight;
-            var bestAsset = -1;
+            var bestAsset = availableAssets[0];
             var bestNewRemainder = float.PositiveInfinity;
 
-            foreach (var idx in availableAssets)
+            foreach (var asset in availableAssets)
             {
-                var newRemainder = Mathf.Abs(remainder - segment[idx].AspectRatio);
+                var newRemainder = Mathf.Abs(remainder - asset.AspectRatio);
                 if (newRemainder < bestNewRemainder)
                 {
-                    bestAsset = idx;
+                    bestAsset = asset;
                     bestNewRemainder = newRemainder;
                 }
             }
 
-            var addedHeight = segment[bestAsset].AspectRatio;
+            var addedHeight = bestAsset.AspectRatio;
             // Check if the new segment would overshoot too far. If so, it's better to stop here.
             if (addedHeight < 2f * remainder)
             {
@@ -78,7 +75,7 @@ public static class SegmentStacker
                 break;
         }
 
-        return new BodySolution(segment, stack, runningHeight);
+        return new BodySolution(stack, runningHeight);
     }
 
     private static List<float> ComputeBodyStretching(float height, BodySolution solution)
@@ -131,24 +128,26 @@ public static class SegmentStacker
         var normalizedHeight = height / diameter;
 
         // Todo warn if multiple?
-        var noseIdx = segments.Nose.GetAnAssetForDiameter(diameter);
-        var mountIdx = segments.Mount.GetAnAssetForDiameter(diameter);
+        var noseAsset = segments.Nose.GetFirstAssetForDiameter(diameter);
+        var mountAsset = segments.Mount.GetFirstAssetForDiameter(diameter);
 
-        var noseHeight = segments.Nose[noseIdx].AspectRatio;
-        var mountHeight = segments.Mount[mountIdx].AspectRatio;
+        var noseHeight = noseAsset.AspectRatio;
+        var mountHeight = mountAsset.AspectRatio;
         var bodyHeight = normalizedHeight - noseHeight - mountHeight;
 
-        var bodySolution = SolveBodyPreliminary(diameter, bodyHeight, segments.Body);
+        var bodySolution = SolveBodyPreliminary(
+            segments.Body.GetAssetsForDiameter(diameter).ToArray(),
+            bodyHeight);
         var bodyStretches = ComputeBodyStretching(bodyHeight, bodySolution);
 
         List<SegmentPlacement> placements = new(bodySolution.Stack.Count + 2);
-        placements.Add(new SegmentPlacement(SegmentRole.Mount, mountIdx, -mountHeight));
+        placements.Add(new SegmentPlacement(SegmentRole.Mount, mountAsset, -mountHeight));
         bodySolution.WriteToPlacements(ref placements, bodyStretches, 0f);
-        placements.Add(new SegmentPlacement(SegmentRole.Nose, noseIdx, bodyHeight));
+        placements.Add(new SegmentPlacement(SegmentRole.Nose, noseAsset, bodyHeight));
 
         var extent = new Vector2(-mountHeight, bodyHeight + noseHeight);
 
-        return new SegmentStack(diameter, segments, placements, extent);
+        return new SegmentStack(diameter, placements, extent);
     }
 
     public static SkinAndCore<SegmentStack> SolveSkinAndCoreSeparately(StackerParameters parameters)

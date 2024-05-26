@@ -5,7 +5,7 @@ namespace AdaptiveTanks;
 
 public readonly record struct SegmentPlacement(
     SegmentRole Role,
-    int AssetIdx,
+    Asset Asset,
     float Baseline,
     float Stretch = 1f
 );
@@ -23,7 +23,6 @@ public readonly record struct SegmentTransformation(
 
 public record SegmentStack(
     float Diameter,
-    SelectedSegmentDefs segmentDefs,
     List<SegmentPlacement> SegmentPlacements,
     Vector2 NormalizedExtent)
 {
@@ -32,10 +31,8 @@ public record SegmentStack(
 
     public IEnumerable<(string mu, SegmentTransformation transformation)> IterSegments()
     {
-        foreach (var placement in SegmentPlacements)
+        foreach (var (segmentRole, asset, baseline, stretch) in SegmentPlacements)
         {
-            var asset = segmentDefs[placement.Role][placement.AssetIdx];
-
             var effectiveDiameter = Diameter / asset.nativeDiameter;
             var nativeHeight = asset.nativeDiameter * asset.AspectRatio;
 
@@ -45,19 +42,17 @@ public record SegmentStack(
                 : (nativeBaseline, nativeBaseline + nativeHeight);
 
             var shouldFlip =
-                (placement.Role == SegmentRole.Nose && asset.nativeOrientationIsDown) ||
-                (placement.Role == SegmentRole.Body && asset.nativeOrientationIsDown) ||
-                (placement.Role == SegmentRole.Mount && !asset.nativeOrientationIsDown);
+                (segmentRole == SegmentRole.Nose && asset.nativeOrientationIsDown) ||
+                (segmentRole == SegmentRole.Body && asset.nativeOrientationIsDown) ||
+                (segmentRole == SegmentRole.Mount && !asset.nativeOrientationIsDown);
             var flipMultiplier = shouldFlip ? -1 : 1;
 
-            var scale = new Vector3(1f, placement.Stretch * flipMultiplier, 1f) * effectiveDiameter;
+            var scale = new Vector3(1f, stretch * flipMultiplier, 1f) * effectiveDiameter;
 
             var flippedNativeBaseline = shouldFlip ? -nativeTop : nativeBaseline;
-            var normalizedBaseline = flippedNativeBaseline / asset.nativeDiameter;
-            var offset = new Vector3(
-                0f,
-                (placement.Baseline - normalizedBaseline * placement.Stretch) * Diameter,
-                0f);
+            var normalizedNativeBaseline = flippedNativeBaseline / asset.nativeDiameter;
+            var offset =
+                new Vector3(0f, (baseline - normalizedNativeBaseline * stretch) * Diameter, 0f);
 
             yield return (asset.mu, new SegmentTransformation(scale, offset));
         }
