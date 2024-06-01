@@ -72,8 +72,5 @@
         <Compile Include="Utils\AttachNodeUtils.cs"/>
         <Compile Include="Utils\TransformUtils.cs"/>
     </ItemGroup>
-    <ItemGroup>
-      <Folder Include="AdaptiveTanks\" />
-    </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
 </Project>
