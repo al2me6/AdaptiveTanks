@@ -46,33 +46,57 @@ public static class SegmentStacker
 {
     private static BodySolution SolveBodyPreliminary(Asset[] availableAssets, float height)
     {
+        Array.Sort(availableAssets, (a, b) => a.AspectRatio.CompareTo(b.AspectRatio));
+        var minimumAspect = availableAssets.Select(asset => asset.AspectRatio).Min();
+
         List<Asset> stack = [];
         float runningHeight = 0;
+
         while (runningHeight < height)
         {
             var remainder = height - runningHeight;
+
             var bestAsset = availableAssets[0];
             var bestNewRemainder = float.PositiveInfinity;
 
-            foreach (var asset in availableAssets)
+            for (var i = 0; i < availableAssets.Length; ++i)
             {
-                var newRemainder = Mathf.Abs(remainder - asset.AspectRatio);
-                if (newRemainder < bestNewRemainder)
+                var candidate = availableAssets[i];
+                var newRemainder = remainder - candidate.AspectRatio;
+                var absNewRemainder = Mathf.Abs(newRemainder);
+
+                // Worse than current best candidate. Skip.
+                if (absNewRemainder > bestNewRemainder) continue;
+
+                // Worse than not doing anything at all. Skip.
+                if (absNewRemainder > remainder) continue;
+
+                // Still under, but the remainder is too small to fit another segment
+                // without overshooting. If this is not the smallest one, don't use it.
+                if (0 < newRemainder && newRemainder < minimumAspect && i > 0) continue;
+
+                // Went over with a larger-than-minimum candidate.
+                if (newRemainder < 0 && i > 0)
                 {
-                    bestAsset = asset;
-                    bestNewRemainder = newRemainder;
+                    // Construct a guess from an alternative stack with an asset one smaller.
+                    // If that gives a better outcome, take that.
+                    var previousAspect = availableAssets[i - 1].AspectRatio;
+                    var possibleStackWithPrevious = remainder - previousAspect - minimumAspect;
+                    if (Mathf.Abs(possibleStackWithPrevious) < absNewRemainder) continue;
                 }
+
+                // Accept candidate.
+                bestAsset = candidate;
+                bestNewRemainder = absNewRemainder;
             }
 
-            var addedHeight = bestAsset.AspectRatio;
-            // Check if the new segment would overshoot too far. If so, it's better to stop here.
-            if (addedHeight < 2f * remainder)
+            if (bestNewRemainder < float.PositiveInfinity)
             {
+                var addedHeight = bestAsset.AspectRatio;
                 stack.Add(bestAsset);
                 runningHeight += addedHeight;
             }
-            else
-                break;
+            else break;
         }
 
         return new BodySolution(stack, runningHeight);
