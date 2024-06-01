@@ -5,6 +5,8 @@ VisualStudioVersion = 17.9.34728.123
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdaptiveTanks", "Src\AdaptiveTanks\AdaptiveTanks.csproj", "{9C14333E-BB70-4CCD-8E1C-951C66794320}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KnapsackProblem", "src\KnapsackProblem\KnapsackProblem.csproj", "{54A266CB-3FFD-49A6-86EB-6B27F8643EA1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -15,6 +17,10 @@ Global
 		{9C14333E-BB70-4CCD-8E1C-951C66794320}.Debug|x64.Build.0 = Debug|x64
 		{9C14333E-BB70-4CCD-8E1C-951C66794320}.Release|x64.ActiveCfg = Release|x64
 		{9C14333E-BB70-4CCD-8E1C-951C66794320}.Release|x64.Build.0 = Release|x64
+		{54A266CB-3FFD-49A6-86EB-6B27F8643EA1}.Debug|x64.ActiveCfg = Debug|x64
+		{54A266CB-3FFD-49A6-86EB-6B27F8643EA1}.Debug|x64.Build.0 = Debug|x64
+		{54A266CB-3FFD-49A6-86EB-6B27F8643EA1}.Release|x64.ActiveCfg = Release|x64
+		{54A266CB-3FFD-49A6-86EB-6B27F8643EA1}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

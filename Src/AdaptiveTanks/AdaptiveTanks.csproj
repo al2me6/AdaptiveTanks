@@ -73,7 +73,10 @@
         <Compile Include="Utils\TransformUtils.cs"/>
     </ItemGroup>
     <ItemGroup>
-      <Folder Include="AdaptiveTanks\" />
+        <ProjectReference Include="..\KnapsackProblem\KnapsackProblem.csproj">
+            <Project>{54a266cb-3ffd-49a6-86eb-6b27f8643ea1}</Project>
+            <Name>KnapsackProblem</Name>
+        </ProjectReference>
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
 </Project>
