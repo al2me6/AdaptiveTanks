@@ -59,6 +59,8 @@
         <Compile Include="SegmentDefinition\SegmentClassification.cs"/>
         <Compile Include="SegmentDefinition\SegmentDef.cs"/>
         <Compile Include="Library.cs"/>
+        <Compile Include="Stacker\BodySolver.cs"/>
+        <Compile Include="Stacker\VirtualSegmentStack.cs"/>
         <Compile Include="Stacker\SegmentStack.cs"/>
         <Compile Include="Stacker\SegmentStacker.cs"/>
         <Compile Include="StyleDefinition\StyleDefStock.cs"/>
