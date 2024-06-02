@@ -44,6 +44,33 @@ public static class UnboundedKnapsack
             }
         }
 
-        return new List<T>();
+        return Recurse(dp, maxWeight, items, weights, values);
+    }
+
+    private static List<T> Recurse<T>(float[] DPTable, int currentWeight, T[] items, int[] weights, float[] values)
+    {
+        // BaseCase: The current weight is 0
+        if (currentWeight == 0)
+            return new List<T>();
+
+        // TODO: Maybe reverse iteration direction
+        for (int idx = items.Length-1; idx >= 0; idx--)
+        {
+            if (weights[idx] > currentWeight)
+                continue;
+            // Check if removing the weight of the item removes the correct value
+            if (DPTable[currentWeight - weights[idx]] + values[idx] == DPTable[currentWeight])
+            {
+                // Recurse here. That returns a list (or null), append this item to that list if it exists
+                List<T> solution = Recurse(DPTable, currentWeight-weights[idx], items, weights, values);
+                if (solution == null)
+                    continue;
+                solution.Add(items[idx]);
+                return solution;
+            }
+        }
+
+        // No item matched the jumps in the DP table, return null
+        return null;
     }
 }

@@ -7,20 +7,40 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdaptiveTanks", "Src\Adapti
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KnapsackProblem", "src\KnapsackProblem\KnapsackProblem.csproj", "{54A266CB-3FFD-49A6-86EB-6B27F8643EA1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KnapsackCLI", "src\KnapsackCLI\KnapsackCLI.csproj", "{8E8285BA-C992-4790-A40E-2E130EB08F5F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
 		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9C14333E-BB70-4CCD-8E1C-951C66794320}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{9C14333E-BB70-4CCD-8E1C-951C66794320}.Debug|Any CPU.Build.0 = Debug|x64
 		{9C14333E-BB70-4CCD-8E1C-951C66794320}.Debug|x64.ActiveCfg = Debug|x64
 		{9C14333E-BB70-4CCD-8E1C-951C66794320}.Debug|x64.Build.0 = Debug|x64
+		{9C14333E-BB70-4CCD-8E1C-951C66794320}.Release|Any CPU.ActiveCfg = Release|x64
+		{9C14333E-BB70-4CCD-8E1C-951C66794320}.Release|Any CPU.Build.0 = Release|x64
 		{9C14333E-BB70-4CCD-8E1C-951C66794320}.Release|x64.ActiveCfg = Release|x64
 		{9C14333E-BB70-4CCD-8E1C-951C66794320}.Release|x64.Build.0 = Release|x64
+		{54A266CB-3FFD-49A6-86EB-6B27F8643EA1}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{54A266CB-3FFD-49A6-86EB-6B27F8643EA1}.Debug|Any CPU.Build.0 = Debug|x64
 		{54A266CB-3FFD-49A6-86EB-6B27F8643EA1}.Debug|x64.ActiveCfg = Debug|x64
 		{54A266CB-3FFD-49A6-86EB-6B27F8643EA1}.Debug|x64.Build.0 = Debug|x64
+		{54A266CB-3FFD-49A6-86EB-6B27F8643EA1}.Release|Any CPU.ActiveCfg = Release|x64
+		{54A266CB-3FFD-49A6-86EB-6B27F8643EA1}.Release|Any CPU.Build.0 = Release|x64
 		{54A266CB-3FFD-49A6-86EB-6B27F8643EA1}.Release|x64.ActiveCfg = Release|x64
 		{54A266CB-3FFD-49A6-86EB-6B27F8643EA1}.Release|x64.Build.0 = Release|x64
+		{8E8285BA-C992-4790-A40E-2E130EB08F5F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8E8285BA-C992-4790-A40E-2E130EB08F5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8E8285BA-C992-4790-A40E-2E130EB08F5F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8E8285BA-C992-4790-A40E-2E130EB08F5F}.Debug|x64.Build.0 = Debug|Any CPU
+		{8E8285BA-C992-4790-A40E-2E130EB08F5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8E8285BA-C992-4790-A40E-2E130EB08F5F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8E8285BA-C992-4790-A40E-2E130EB08F5F}.Release|x64.ActiveCfg = Release|Any CPU
+		{8E8285BA-C992-4790-A40E-2E130EB08F5F}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
