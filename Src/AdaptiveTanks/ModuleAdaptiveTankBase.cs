@@ -88,8 +88,8 @@ public abstract class ModuleAdaptiveTankBase : PartModule
 
     #region style management
 
-    public abstract SelectedSegmentDefs GetSelectedSkinSegments();
-    public abstract SelectedSegmentDefs GetSelectedCoreSegments();
+    public abstract SelectedSegments SelectedSkinSegments();
+    public abstract SelectedSegments SelectedCoreSegments();
 
     #endregion
 
@@ -147,8 +147,8 @@ public abstract class ModuleAdaptiveTankBase : PartModule
         var parameters = new StackerParameters(
             diameter,
             height,
-            GetSelectedSkinSegments(),
-            GetSelectedCoreSegments()
+            SelectedSkinSegments(),
+            SelectedCoreSegments()
         );
         currentStacks = SolveStack(parameters);
         RealizeGeometry();

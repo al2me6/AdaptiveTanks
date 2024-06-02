@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using AdaptiveTanks.Extensions;
 
 namespace AdaptiveTanks;
@@ -165,23 +164,11 @@ public class ModuleAdaptiveTankStock : ModuleAdaptiveTankBase
     public StyleDefStock SkinStyle => Library<StyleDefStockSkin>.Get(skinStyle);
     public StyleDefStock CoreStyle => Library<StyleDefStockCore>.Get(coreStyle);
 
-    public override SelectedSegmentDefs GetSelectedSkinSegments()
-    {
-        return new SelectedSegmentDefs(
-            Library<SegmentDef>.Get(skinNoseVariant),
-            Library<SegmentDef>.Get(skinBodyVariant),
-            Library<SegmentDef>.Get(skinMountVariant)
-        );
-    }
+    public override SelectedSegments SelectedSkinSegments() =>
+        new(skinNoseVariant, skinBodyVariant, skinMountVariant);
 
-    public override SelectedSegmentDefs GetSelectedCoreSegments()
-    {
-        return new SelectedSegmentDefs(
-            Library<SegmentDef>.Get(coreNoseVariant),
-            Library<SegmentDef>.Get(coreBodyVariant),
-            Library<SegmentDef>.Get(coreMountVariant)
-        );
-    }
+    public override SelectedSegments SelectedCoreSegments() =>
+        new(coreNoseVariant, coreBodyVariant, coreMountVariant);
 
     protected void OnStyleModified(BaseField f, object obj)
     {

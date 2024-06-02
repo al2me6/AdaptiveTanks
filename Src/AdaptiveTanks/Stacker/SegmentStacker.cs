@@ -1,30 +1,14 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
 namespace AdaptiveTanks;
 
-public readonly record struct SelectedSegmentDefs(
-    SegmentDef Nose,
-    SegmentDef Body,
-    SegmentDef Mount
-)
-{
-    public SegmentDef this[SegmentRole role] => role switch
-    {
-        SegmentRole.Nose => Nose,
-        SegmentRole.Body => Body,
-        SegmentRole.Mount => Mount,
-        _ => throw new IndexOutOfRangeException()
-    };
-};
-
 public readonly record struct StackerParameters(
     float Diameter,
     float Height,
-    SelectedSegmentDefs SkinSegments,
-    SelectedSegmentDefs CoreSegments
+    SelectedSegments SkinSegments,
+    SelectedSegments CoreSegments
 );
 
 public readonly record struct BodySolution(List<Asset> Stack, float Height)
@@ -45,7 +29,7 @@ public readonly record struct BodySolution(List<Asset> Stack, float Height)
 public static class SegmentStacker
 {
     public static SegmentStack SolveStack(
-        float diameter, float height, SelectedSegmentDefs segments)
+        float diameter, float height, SelectedSegments segments)
     {
         var normalizedHeight = height / diameter;
 
