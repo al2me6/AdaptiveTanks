@@ -5,19 +5,34 @@ using UnityEngine;
 
 namespace AdaptiveTanks;
 
+public record StretchedAsset
+{
+    public Asset Asset { get; init; }
+    public float Stretch { get; set; } = 1f;
+
+    public float StretchedAspectRatio => Asset.AspectRatio * Stretch;
+}
+
+public record BodySolution(List<StretchedAsset> Stack, float TargetAspectRatio)
+{
+    public float SolutionAspectRatio() => Stack
+        .Select(segment => segment.StretchedAspectRatio)
+        .Sum();
+}
+
 public static class BodySolver
 {
-    public static BodySolution SolvePreliminary(Asset[] availableAssets, float height)
+    public static BodySolution Solve(Asset[] availableAssets, float aspectRatio)
     {
         Array.Sort(availableAssets, (a, b) => a.AspectRatio.CompareTo(b.AspectRatio));
         var minimumAspect = availableAssets.Select(asset => asset.AspectRatio).Min();
 
-        List<Asset> stack = [];
-        float runningHeight = 0;
+        List<StretchedAsset> stack = [];
+        float runningAspect = 0;
 
-        while (runningHeight < height)
+        while (runningAspect < aspectRatio)
         {
-            var remainder = height - runningHeight;
+            var remainder = aspectRatio - runningAspect;
 
             var bestAsset = availableAssets[0];
             var bestNewRemainder = float.PositiveInfinity;
@@ -56,19 +71,25 @@ public static class BodySolver
             if (bestNewRemainder < float.PositiveInfinity)
             {
                 var addedHeight = bestAsset.AspectRatio;
-                stack.Add(bestAsset);
-                runningHeight += addedHeight;
+                stack.Add(new StretchedAsset { Asset = bestAsset });
+                runningAspect += addedHeight;
             }
             else break;
         }
 
-        return new BodySolution(stack, runningHeight);
+        var solution = new BodySolution(stack, aspectRatio);
+        Stretch(ref solution);
+
+        return solution;
     }
 
-    public static List<float> ComputeStretching(float height, BodySolution solution)
+    private static void Stretch(ref BodySolution solution)
     {
-        var requiredStretch = height / solution.Height;
-        var stretches = Enumerable.Repeat(requiredStretch, solution.Stack.Count).ToList();
+        var requiredStretch = solution.TargetAspectRatio / solution.SolutionAspectRatio();
+        foreach (var segment in solution.Stack)
+        {
+            segment.Stretch = requiredStretch;
+        }
 
         // var isClamped = Enumerable.Repeat(false, solution.Stack.Count).ToList();
         //
@@ -105,7 +126,5 @@ public static class BodySolver
         // }
 
         // TODO: verify not every segment got clamped. If so, what do?
-
-        return stretches;
     }
 }

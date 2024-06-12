@@ -63,15 +63,16 @@
         <Compile Include="SegmentDefinition\SegmentDef.cs"/>
         <Compile Include="SegmentDefinition\SegmentSelection.cs"/>
         <Compile Include="Stacker\BodySolver.cs"/>
+        <Compile Include="Stacker\ProtoSegmentStack.cs"/>
         <Compile Include="Stacker\SegmentStack.cs"/>
         <Compile Include="Stacker\SegmentStacker.cs"/>
-        <Compile Include="Stacker\VirtualSegmentStack.cs"/>
         <Compile Include="StyleDefinition\StyleDefStock.cs"/>
         <Compile Include="Utils\AttachNodeUtils.cs"/>
         <Compile Include="Utils\CSharpPolyfill.cs"/>
         <Compile Include="Utils\ConfigNodeExtensions.cs"/>
         <Compile Include="Utils\Debug.cs"/>
         <Compile Include="Utils\DragCubeTool.cs"/>
+        <Compile Include="Utils\Itertools.cs"/>
         <Compile Include="Utils\PAWExtensions.cs"/>
         <Compile Include="Utils\TransformUtils.cs"/>
     </ItemGroup>

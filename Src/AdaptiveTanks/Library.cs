@@ -6,8 +6,8 @@ using System.Reflection;
 namespace AdaptiveTanks;
 
 /// <summary>
-/// Register the annotated type to be loaded by the <see cref="Library"/>.
-/// The type must implement <see cref="ILibraryLoad"/>.
+/// Register the annotated class to be loaded by the <see cref="Library"/>.
+/// The class must implement <see cref="ILibraryLoad"/>.
 /// </summary>
 /// <param name="nodeName">The name of the top-level nodes to parse.</param>
 /// <param name="loadOrder">Override the loading order, e.g. if Library&lt;U> needs to read
@@ -35,20 +35,21 @@ public static class LibraryLoader
             if (attr is LibraryLoadAttribute loadAttr) libraryTypes.Add((t, loadAttr));
         }
 
-        foreach (var load in libraryTypes.OrderBy(ta => ta.attr.LoadOrder))
+        foreach (var load in libraryTypes.OrderBy(load => load.attr.LoadOrder))
         {
             typeof(Library<>)
-                .MakeGenericType([load.t])
+                .MakeGenericType(load.t)
                 .GetMethod("Load")?
                 .Invoke(null, [load.attr.NodeName]);
         }
     }
 }
 
-public static class Library<T> where T : ILibraryLoad, new()
+public static class Library<T> where T : class, ILibraryLoad, new()
 {
     public static IReadOnlyDictionary<string, T> Items { get; private set; }
     public static T Get(string name) => Items[name];
+    public static IEnumerable<T> GetAll(IEnumerable<string> names) => names.Select(n => Items[n]);
 
     public static void Load(string nodeName)
     {

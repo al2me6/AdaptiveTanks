@@ -7,27 +7,28 @@ using ROUtils.DataTypes;
 namespace AdaptiveTanks;
 
 [Flags]
-public enum SegmentRoleSerialize
+public enum SegmentRoleSer : byte
 {
-    body = 1,
-    nose = 2,
-    mount = 4,
-    cap = nose | mount,
-    intertank = 8
+    tank = 1 << 0,
+    intertank = 1 << 1,
+    tankCapInternal = 1 << 2,
+    tankCapTerminal = 1 << 3,
+    accessory = 1 << 4
 }
 
-public static class SegmentRoleSerializeExtensions
+[Flags]
+public enum capPositionSer : byte
 {
-    public static bool Is(this SegmentRoleSerialize serialized, SegmentRole role)
-    {
-        return serialized.HasFlag(role switch
-        {
-            SegmentRole.Nose => SegmentRoleSerialize.nose,
-            SegmentRole.Body => SegmentRoleSerialize.body,
-            SegmentRole.Mount => SegmentRoleSerialize.mount,
-            _ => throw new ArgumentOutOfRangeException(nameof(role))
-        });
-    }
+    top = 1 << 0,
+    bottom = 1 << 1,
+    either = top | bottom
+}
+
+[Flags]
+public enum SegmentAlignmentSer : byte
+{
+    pinBothEnds,
+    pinInteriorEnd
 }
 
 [LibraryLoad("AT_SEGMENT")]
@@ -35,16 +36,39 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
 {
     [Persistent] public string name;
     [Persistent] protected string displayName;
-    [Persistent] public SegmentRoleSerialize role;
+    [Persistent] public SegmentRoleSer role = SegmentRoleSer.tank;
+    [Persistent] public capPositionSer capPosition = capPositionSer.either;
+    [Persistent] public SegmentAlignmentSer align = SegmentAlignmentSer.pinBothEnds;
+
     public Asset[] assets;
 
     public override void Load(ConfigNode node)
     {
         base.Load(node);
+
+        if (role.HasFlag(SegmentRoleSer.accessory) && role != SegmentRoleSer.accessory)
+        {
+            Debug.LogWarning($"accessory segment `{name}` may not declare other roles");
+            role = SegmentRoleSer.accessory;
+        }
+
+        if (role == SegmentRoleSer.accessory)
+        {
+            align = SegmentAlignmentSer.pinInteriorEnd;
+        }
+
+        if (align.HasFlag(SegmentAlignmentSer.pinInteriorEnd)
+            && role != SegmentRoleSer.accessory
+            && !role.HasFlag(SegmentRoleSer.tankCapTerminal))
+        {
+            Debug.LogWarning($"non-terminal segment `{name}` may not be aligned `pinInteriorEnd`");
+            align = SegmentAlignmentSer.pinBothEnds;
+        }
+
         assets = node.LoadAllFromNodes<Asset>().OrderBy(asset => asset.AspectRatio).ToArray();
         if (assets.Length == 0)
         {
-            Debug.LogWarning($"segment definition `{name}` contained no assets; adding default");
+            Debug.LogWarning($"segment `{name}` contained no assets; adding default");
             assets = [new Asset()];
         }
     }
@@ -58,10 +82,53 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
     public string ItemName() => name;
     public string DisplayName => displayName ?? name;
 
-    public Asset this[int idx] => assets[idx];
+    public bool Supports(SegmentRole targetRole) => targetRole switch
+    {
+        SegmentRole.Tank =>
+            role.HasFlag(SegmentRoleSer.tank),
+        SegmentRole.TerminatorTop =>
+            (role.HasFlag(SegmentRoleSer.tankCapTerminal)
+             || role.HasFlag(SegmentRoleSer.accessory))
+            && capPosition.HasFlag(capPositionSer.top),
+        SegmentRole.TerminatorBottom =>
+            (role.HasFlag(SegmentRoleSer.tankCapTerminal)
+             || role.HasFlag(SegmentRoleSer.accessory))
+            && capPosition.HasFlag(capPositionSer.bottom),
+        SegmentRole.Intertank =>
+            role.HasFlag(SegmentRoleSer.intertank),
+        SegmentRole.TankCapInternalTop =>
+            role.HasFlag(SegmentRoleSer.tankCapInternal)
+            && capPosition.HasFlag(capPositionSer.top),
+        SegmentRole.TankCapInternalBottom =>
+            role.HasFlag(SegmentRoleSer.tankCapInternal)
+            && capPosition.HasFlag(capPositionSer.bottom),
+        _ => throw new ArgumentOutOfRangeException(nameof(targetRole))
+    };
+
+    public bool IsAccessory => role == SegmentRoleSer.accessory;
+    public bool IsFueled => !IsAccessory;
+
+    public bool CanToggleAlignment =>
+        align == (SegmentAlignmentSer.pinBothEnds | SegmentAlignmentSer.pinInteriorEnd);
+
+    public SegmentAlignment? TryGetOnlyAlignment() => align switch
+    {
+        SegmentAlignmentSer.pinBothEnds => SegmentAlignment.PinBothEnds,
+        SegmentAlignmentSer.pinInteriorEnd => SegmentAlignment.PinInteriorEnd,
+        _ => null
+    };
 
     public IEnumerable<Asset> GetAssetsForDiameter(float diameter) =>
         assets.Where(a => a.SupportsDiameter(diameter));
 
     public Asset GetFirstAssetForDiameter(float diameter) => GetAssetsForDiameter(diameter).First();
+
+    public static readonly SegmentDef CoreAccessorySurrogate = new()
+    {
+        name = "__ATCoreAccessorySurrogate",
+        displayName = "Core Accessory (Placeholder)",
+        role = SegmentRoleSer.accessory,
+        align = SegmentAlignmentSer.pinInteriorEnd,
+        assets = [new Asset()]
+    };
 }

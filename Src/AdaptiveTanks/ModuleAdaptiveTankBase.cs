@@ -44,26 +44,19 @@ public abstract class ModuleAdaptiveTankBase : PartModule
 
     #region PAW
 
-    public const string PAWName = "AdaptiveTanks";
-    public const string PAWDispName = PAWName;
-
     [KSPField] public float dimensionIncrementLarge = 1f;
     [KSPField] public float dimensionIncrementSmall = 0.25f;
     [KSPField] public float dimensionIncrementSlide = 0.01f;
 
-    [KSPField(isPersistant = true, guiName = "Diameter", guiActiveEditor = true,
-        groupName = PAWName, groupDisplayName = PAWDispName)]
+    [KSPField(isPersistant = true, guiName = "Diameter", guiActiveEditor = true)]
     [UI_FloatEdit(sigFigs = 4, useSI = true, unit = "m", scene = UI_Scene.Editor)]
     public float diameter;
 
-    [KSPField(isPersistant = true, guiName = "Height", guiActiveEditor = true,
-        groupName = PAWName, groupDisplayName = PAWDispName)]
+    [KSPField(isPersistant = true, guiName = "Height", guiActiveEditor = true)]
     [UI_FloatEdit(sigFigs = 4, useSI = true, unit = "m", scene = UI_Scene.Editor)]
     public float height;
 
-    [KSPField(guiName = "Worst distortion", guiActiveEditor = true,
-        groupName = PAWName, groupDisplayName = PAWDispName)]
-    [UI_Label]
+    [KSPField(guiName = "Worst distortion", guiActiveEditor = true)] [UI_Label]
     public string sWorstDistortion = "";
 
     protected void InitializeDimensionSelectors()
@@ -134,9 +127,8 @@ public abstract class ModuleAdaptiveTankBase : PartModule
     protected void RecenterStack()
     {
         part.GetOrCreateAnchor(SkinStackAnchorName).localPosition =
-            Vector3.down * currentStacks.Skin.ExtentCenter;
-        part.GetOrCreateAnchor(CoreStackAnchorName).localPosition =
-            Vector3.down * currentStacks.Core.ExtentCenter;
+            part.GetOrCreateAnchor(CoreStackAnchorName).localPosition =
+                Vector3.down * currentStacks.HalfHeight();
     }
 
     public abstract SkinAndCore<SegmentStack> SolveStack(StackerParameters parameters);
@@ -168,7 +160,6 @@ public abstract class ModuleAdaptiveTankBase : PartModule
     // For every increase in diameter by this amount, increment the size of the attachment node by 1.
     [KSPField] public float attachNodeSizeIncrementFactor = 1.25f;
     [KSPField] public int maxAttachNodeSize = 6;
-
 
     protected AttachNode nodeTop;
     protected AttachNode nodeBottom;
@@ -206,7 +197,7 @@ public abstract class ModuleAdaptiveTankBase : PartModule
                 var localPushNrm =
                     Vector3.ProjectOnPlane(localPos, Vector3.up).normalized * deltaRadius;
                 var worldPushNrm = transform.TransformVector(localPushNrm);
-                child.transform.position += worldPushNrm;
+                child.PushBy(worldPushNrm);
             }
             // TODO: take local geometry at position of attachment into account.
             // Current logic only works for cylindrical objects.

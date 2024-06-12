@@ -7,7 +7,7 @@ public readonly record struct SegmentPlacement(
     SegmentRole Role,
     Asset Asset,
     float Baseline,
-    float Stretch = 1f
+    float Stretch
 );
 
 public readonly record struct SegmentTransformation(
@@ -21,17 +21,29 @@ public readonly record struct SegmentTransformation(
     }
 }
 
-public record SegmentStack(
-    float Diameter,
-    List<SegmentPlacement> SegmentPlacements,
-    Vector2 NormalizedExtent)
+public record SegmentStack(float Diameter, float Height)
 {
-    public float ExtentCenter => (NormalizedExtent.x + NormalizedExtent.y) / 2f * Diameter;
-    public float HalfHeight => (NormalizedExtent.y - NormalizedExtent.x) / 2f * Diameter;
+    public List<SegmentPlacement> Placements { get; } = [];
+
+    public float HalfHeight => Height / 2f;
+
+    public void Add(SegmentRole role, Asset asset, float baseline, float stretch)
+    {
+        Placements.Add(new SegmentPlacement(role, asset, baseline, stretch));
+    }
+
+    public void Add(BodySolution bodySolution, float baseline)
+    {
+        foreach (var segment in bodySolution.Stack)
+        {
+            Add(SegmentRole.Tank, segment.Asset, baseline, segment.Stretch);
+            baseline += segment.StretchedAspectRatio;
+        }
+    }
 
     public IEnumerable<(string mu, SegmentTransformation transformation)> IterSegments()
     {
-        foreach (var (segmentRole, asset, baseline, stretch) in SegmentPlacements)
+        foreach (var (segmentRole, asset, baseline, stretch) in Placements)
         {
             var effectiveDiameter = Diameter / asset.nativeDiameter;
             var nativeHeight = asset.nativeDiameter * asset.AspectRatio;
@@ -41,10 +53,14 @@ public record SegmentStack(
                 ? (nativeBaseline - nativeHeight, nativeBaseline)
                 : (nativeBaseline, nativeBaseline + nativeHeight);
 
-            var shouldFlip =
-                (segmentRole == SegmentRole.Nose && asset.nativeOrientationIsDown) ||
-                (segmentRole == SegmentRole.Body && asset.nativeOrientationIsDown) ||
-                (segmentRole == SegmentRole.Mount && !asset.nativeOrientationIsDown);
+            var shouldFlip = (segmentRole, asset.nativeOrientationIsDown) is
+                (SegmentRole.Tank, true)
+                or (SegmentRole.TerminatorTop, true)
+                or (SegmentRole.TerminatorBottom, false)
+                or (SegmentRole.Intertank, true)
+                or (SegmentRole.TankCapInternalTop, true)
+                or (SegmentRole.TankCapInternalBottom, false);
+
             var flipMultiplier = shouldFlip ? -1 : 1;
 
             var scale = new Vector3(1f, stretch * flipMultiplier, 1f) * effectiveDiameter;
@@ -61,7 +77,7 @@ public record SegmentStack(
     public float WorstDistortion()
     {
         var worstDelta = 0f;
-        foreach (var placement in SegmentPlacements)
+        foreach (var placement in Placements)
         {
             var delta = placement.Stretch - 1f;
             if (Mathf.Abs(delta) > Mathf.Abs(worstDelta)) worstDelta = delta;

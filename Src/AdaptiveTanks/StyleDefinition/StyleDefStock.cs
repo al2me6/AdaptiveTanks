@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using ROUtils.DataTypes;
 
@@ -14,36 +15,47 @@ public abstract class StyleDefStock : ConfigNodePersistenceBase, ILibraryLoad
     {
         base.Load(node);
 
-        var segmentDefs = Segments.Select(Library<SegmentDef>.Get).ToArray();
-        Noses = segmentDefs.Where(seg => seg.role.Is(SegmentRole.Nose)).ToArray();
-        Bodies = segmentDefs.Where(seg => seg.role.Is(SegmentRole.Body)).ToArray();
-        Mounts = segmentDefs.Where(seg => seg.role.Is(SegmentRole.Mount)).ToArray();
+        var positionalRoles = Enum.GetValues(typeof(SegmentRole));
+        SegmentsByRole = positionalRoles
+            .Cast<SegmentRole>()
+            .ToDictionary(role => role, _ => new List<SegmentDef>());
+        foreach (var segmentDef in Library<SegmentDef>.GetAll(Segments))
+        {
+            foreach (var positionalRole in positionalRoles.Cast<SegmentRole>())
+            {
+                if (segmentDef.Supports(positionalRole))
+                    SegmentsByRole[positionalRole].Add(segmentDef);
+            }
+        }
 
         Debug.Log($"style {name}");
         Debug.Log($"segments {string.Join(", ", Segments)}");
     }
 
     public string ItemName() => name;
-
     public string DisplayName => displayName ?? name;
-    public SegmentDef[] Noses { get; private set; }
-    public SegmentDef[] Bodies { get; private set; }
-    public SegmentDef[] Mounts { get; private set; }
 
-    public SegmentDef[] GetAvailableSegments(SegmentRole role)
-    {
-        return role switch
-        {
-            SegmentRole.Nose => Noses,
-            SegmentRole.Body => Bodies,
-            SegmentRole.Mount => Mounts,
-            _ => throw new ArgumentOutOfRangeException(nameof(role))
-        };
-    }
+    public IReadOnlyDictionary<SegmentRole, List<SegmentDef>> SegmentsByRole { get; private set; }
 }
 
 [LibraryLoad("AT_SKIN_STYLE_STOCK", loadOrder: 1)]
 public class StyleDefStockSkin : StyleDefStock;
 
 [LibraryLoad("AT_CORE_STYLE_STOCK", loadOrder: 1)]
-public class StyleDefStockCore : StyleDefStock;
+public class StyleDefStockCore : StyleDefStock
+{
+    public override void Load(ConfigNode node)
+    {
+        base.Load(node);
+
+        for (var i = 0; i < Segments.Count; ++i)
+        {
+            var segment = Library<SegmentDef>.Get(Segments[i]);
+            if (segment.IsAccessory)
+            {
+                Debug.LogWarning($"core style {name} may not contain accessories");
+                Segments.RemoveAt(i);
+            }
+        }
+    }
+}
