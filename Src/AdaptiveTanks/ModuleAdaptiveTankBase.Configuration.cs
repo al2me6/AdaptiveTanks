@@ -232,12 +232,8 @@ public partial class ModuleAdaptiveTankBase
         }
         else
         {
-            var skinAlign = skinTerminator.TryGetOnlyAlignment()!.Value;
-            var coreAlign = coreTerminator.TryGetOnlyAlignment()!.Value;
-            var align = skinAlign == coreAlign
-                ? skinAlign
-                : SegmentAlignment.PinBothEnds; // TODO: this needs better handling.
-            Alignment(position) = align;
+            // Note that in case of a mismatch, the core takes precedence.
+            Alignment(position) = coreTerminator.TryGetOnlyAlignment()!.Value;
             kspEvent.guiActiveEditor = false;
         }
     }
