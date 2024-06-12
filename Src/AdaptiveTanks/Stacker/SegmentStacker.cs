@@ -1,12 +1,5 @@
 namespace AdaptiveTanks;
 
-public readonly record struct StackerParameters(
-    float Diameter,
-    float Height,
-    SelectedSegments SkinSegments,
-    SelectedSegments CoreSegments
-);
-
 public static class SegmentStacker
 {
     private static SegmentStack SolveStack(float diameter, float height, SelectedSegments segments)
@@ -23,10 +16,14 @@ public static class SegmentStacker
         return protoStack.Elaborate();
     }
 
-    public static SkinAndCore<SegmentStack> SolveStack(in StackerParameters parameters)
+    public static SkinAndCore<SegmentStack> SolveStack(
+        float diameter,
+        float height,
+        SelectedSegments skinSegments,
+        SelectedSegments coreSegments)
     {
         return new SkinAndCore<SegmentStack>(
-            Skin: SolveStack(parameters.Diameter, parameters.Height, parameters.SkinSegments),
-            Core: SolveStack(parameters.Diameter, parameters.Height, parameters.CoreSegments));
+            Skin: SolveStack(diameter, height, skinSegments),
+            Core: SolveStack(diameter, height, coreSegments));
     }
 }

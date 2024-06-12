@@ -5,7 +5,7 @@ using ROUtils.DataTypes;
 
 namespace AdaptiveTanks;
 
-public abstract class StyleDefStock : ConfigNodePersistenceBase, ILibraryLoad
+public abstract class StyleDef : ConfigNodePersistenceBase, ILibraryLoad
 {
     [Persistent] public string name;
     [Persistent] public string displayName;
@@ -38,11 +38,11 @@ public abstract class StyleDefStock : ConfigNodePersistenceBase, ILibraryLoad
     public IReadOnlyDictionary<SegmentRole, List<SegmentDef>> SegmentsByRole { get; private set; }
 }
 
-[LibraryLoad("AT_SKIN_STYLE_STOCK", loadOrder: 1)]
-public class StyleDefStockSkin : StyleDefStock;
+[LibraryLoad("AT_SKIN_STYLE", loadOrder: 1)]
+public class StyleDefSkin : StyleDef;
 
-[LibraryLoad("AT_CORE_STYLE_STOCK", loadOrder: 1)]
-public class StyleDefStockCore : StyleDefStock
+[LibraryLoad("AT_CORE_STYLE", loadOrder: 1)]
+public class StyleDefCore : StyleDef
 {
     public override void Load(ConfigNode node)
     {

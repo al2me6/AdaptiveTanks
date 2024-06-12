@@ -7,7 +7,7 @@ public static class Debug
 #if DEBUG
         var isBetaVersion = true;
 #else
-        bool isBetaVersion = always;
+        var isBetaVersion = always;
 #endif
         if (isBetaVersion) UnityEngine.Debug.Log($"[AdaptiveTanks] {str}");
     }

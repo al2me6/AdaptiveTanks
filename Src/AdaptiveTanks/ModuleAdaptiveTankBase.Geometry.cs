@@ -5,88 +5,15 @@ using UnityEngine;
 
 namespace AdaptiveTanks;
 
-public abstract class ModuleAdaptiveTankBase : PartModule
+public partial class ModuleAdaptiveTankBase
 {
-    #region lifecycle
-
-    public override void OnIconCreate() => InitializeConfigurationAndModel();
-
-    public override void OnInitialize() => InitializeConfigurationAndModel();
-
-    public override void OnStart(StartState state)
+    public void InitializeModel()
     {
-        InitializeConfigurationAndModel();
-        InitializeEditorPAW();
-    }
-
-    protected virtual void InitializeConfigurationAndModelOverride()
-    {
-    }
-
-    protected bool _configAndModelInitialized = false;
-
-    protected void InitializeConfigurationAndModel()
-    {
-        if (_configAndModelInitialized) return;
-        _configAndModelInitialized = true;
-        InitializeConfigurationAndModelOverride();
         FindStackAttachNodes();
         ReStack();
     }
 
-    protected virtual void InitializeEditorPAW()
-    {
-        InitializeDimensionSelectors();
-        UpdateDimensionLimits();
-    }
-
-    #endregion
-
-    #region PAW
-
-    [KSPField] public float dimensionIncrementLarge = 1f;
-    [KSPField] public float dimensionIncrementSmall = 0.25f;
-    [KSPField] public float dimensionIncrementSlide = 0.01f;
-
-    [KSPField(isPersistant = true, guiName = "Diameter", guiActiveEditor = true)]
-    [UI_FloatEdit(sigFigs = 4, useSI = true, unit = "m", scene = UI_Scene.Editor)]
-    public float diameter;
-
-    [KSPField(isPersistant = true, guiName = "Height", guiActiveEditor = true)]
-    [UI_FloatEdit(sigFigs = 4, useSI = true, unit = "m", scene = UI_Scene.Editor)]
-    public float height;
-
-    [KSPField(guiName = "Worst distortion", guiActiveEditor = true)] [UI_Label]
-    public string sWorstDistortion = "";
-
-    protected void InitializeDimensionSelectors()
-    {
-        Fields[nameof(diameter)].AddSelfAndSymmetryListener(OnDimensionModified);
-        Fields[nameof(height)].AddSelfAndSymmetryListener(OnDimensionModified);
-
-        Fields[nameof(diameter)].AsEditor<UI_FloatEdit>().SetIncrements(dimensionIncrementLarge,
-            dimensionIncrementSmall, dimensionIncrementSlide);
-        Fields[nameof(height)].AsEditor<UI_FloatEdit>().SetIncrements(dimensionIncrementLarge,
-            dimensionIncrementSmall, dimensionIncrementSlide);
-    }
-
-    protected abstract void UpdateDimensionLimits();
-
-    protected virtual void OnDimensionModified(BaseField f, object obj)
-    {
-        ReStack();
-    }
-
-    #endregion
-
-    #region style management
-
-    public abstract SelectedSegments SelectedSkinSegments();
-    public abstract SelectedSegments SelectedCoreSegments();
-
-    #endregion
-
-    #region stack generation
+    #region stacking
 
     public const string SkinStackAnchorName = "__ATSkinStack";
     public const string CoreStackAnchorName = "__ATCoreStack";
@@ -131,18 +58,14 @@ public abstract class ModuleAdaptiveTankBase : PartModule
                 Vector3.down * currentStacks.HalfHeight();
     }
 
-    public abstract SkinAndCore<SegmentStack> SolveStack(StackerParameters parameters);
-
     public void ReStack()
     {
         var oldDiameter = currentStacks?.Diameter();
-        var parameters = new StackerParameters(
+        currentStacks = SegmentStacker.SolveStack(
             diameter,
             height,
-            SelectedSkinSegments(),
-            SelectedCoreSegments()
-        );
-        currentStacks = SolveStack(parameters);
+            SkinSegments(),
+            CoreSegments());
         RealizeGeometry();
         RecenterStack();
         UpdateAttachNodes();
@@ -152,14 +75,6 @@ public abstract class ModuleAdaptiveTankBase : PartModule
     #endregion
 
     #region attach node management
-
-    // Nodes with these names (e.g. node_stack_top, _bottom) will be used as the stack nodes.
-    [KSPField] public string nodeStackTopId = "top";
-    [KSPField] public string nodeStackBottomId = "bottom";
-
-    // For every increase in diameter by this amount, increment the size of the attachment node by 1.
-    [KSPField] public float attachNodeSizeIncrementFactor = 1.25f;
-    [KSPField] public int maxAttachNodeSize = 6;
 
     protected AttachNode nodeTop;
     protected AttachNode nodeBottom;
