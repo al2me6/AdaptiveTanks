@@ -37,7 +37,7 @@ public partial class ModuleAdaptiveTankBase
         if ((skinStyles.Length == 0 || coreStyles.Length == 0) &&
             part.partInfo?.partPrefab is Part prefab)
         {
-            var prefabPM = prefab.FindModuleImplementing<ModuleAdaptiveTankStock>();
+            var prefabPM = prefab.FindModuleImplementing<ModuleAdaptiveTankBase>();
             skinStyles = prefabPM.skinStyles;
             coreStyles = prefabPM.coreStyles;
         }
