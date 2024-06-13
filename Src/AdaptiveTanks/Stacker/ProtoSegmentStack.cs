@@ -96,7 +96,6 @@ internal record ProtoSegmentStack(float Diameter, float Height)
             {
                 case ProtoSegmentTerminator(var role, var asset, SegmentAlignment.PinInteriorEnd):
                 {
-                    Debug.Log("^^Wtf");
                     if (!(i == 0 && role == SegmentRole.TerminatorBottom)
                         && !(i == ProtoSegments.Count - 1 && role == SegmentRole.TerminatorTop))
                     {
