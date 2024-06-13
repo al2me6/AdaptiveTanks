@@ -225,16 +225,28 @@ public partial class ModuleAdaptiveTankBase
         var skinTerminator = TerminatorSegment(Layer.Skin, position);
         var coreTerminator = TerminatorSegment(Layer.Core, position);
         var kspEvent = Events[AlignmentToggleEventName(position)];
-        if (skinTerminator.CanToggleAlignment && coreTerminator.CanToggleAlignment)
+
+        switch (skinTerminator.CanToggleAlignment, coreTerminator.CanToggleAlignment)
         {
-            kspEvent.guiActiveEditor = true;
-            UpdateAlignmentToggleText(position);
-        }
-        else
-        {
-            // Note that in case of a mismatch, the core takes precedence.
-            Alignment(position) = coreTerminator.TryGetOnlyAlignment()!.Value;
-            kspEvent.guiActiveEditor = false;
+            case (true, true):
+            {
+                kspEvent.guiActiveEditor = true;
+                UpdateAlignmentToggleText(position);
+                break;
+            }
+            case (false, true):
+            {
+                kspEvent.guiActiveEditor = false;
+                Alignment(position) = skinTerminator.TryGetOnlyAlignment()!.Value;
+                break;
+            }
+            case (true, false) or (false, false):
+            {
+                // Note that in case of a mismatch, the core takes precedence.
+                kspEvent.guiActiveEditor = false;
+                Alignment(position) = coreTerminator.TryGetOnlyAlignment()!.Value;
+                break;
+            }
         }
     }
 
