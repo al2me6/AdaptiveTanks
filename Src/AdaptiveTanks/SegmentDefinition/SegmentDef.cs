@@ -27,12 +27,12 @@ public enum capPositionSer : byte
 [Flags]
 public enum SegmentAlignmentSer : byte
 {
-    pinBothEnds,
-    pinInteriorEnd
+    pinBothEnds = 1 << 0,
+    pinInteriorEnd = 1 << 1
 }
 
 [LibraryLoad("AT_SEGMENT")]
-public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
+public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad, ILibraryLoadModify<SegmentDef>
 {
     [Persistent] public string name;
     [Persistent] protected string displayName;
@@ -129,6 +129,11 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
         displayName = "Core Accessory (Placeholder)",
         role = SegmentRoleSer.accessory,
         align = SegmentAlignmentSer.pinInteriorEnd,
-        assets = [new Asset()]
+        assets = [new Asset { nativeHeight = 0f }]
     };
+
+    public void PostLoadModify(ref Dictionary<string, SegmentDef> items)
+    {
+        items.Add(CoreAccessorySurrogate.name, CoreAccessorySurrogate);
+    }
 }
