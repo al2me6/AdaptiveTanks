@@ -24,6 +24,12 @@ public interface ILibraryLoad : IConfigNode
     public string ItemName();
 }
 
+public interface ILibraryLoadModify<TThis>
+{
+    // This should be static...
+    public void PostLoadModify(ref Dictionary<string, TThis> items);
+}
+
 public static class LibraryLoader
 {
     public static void ModuleManagerPostLoad()
@@ -60,6 +66,11 @@ public static class Library<T> where T : class, ILibraryLoad, new()
             var item = new T();
             item.Load(node);
             items[item.ItemName()] = item;
+        }
+
+        if (new T() is ILibraryLoadModify<T> modifier)
+        {
+            modifier.PostLoadModify(ref items);
         }
 
         Items = items;
