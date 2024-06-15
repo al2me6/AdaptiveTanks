@@ -48,4 +48,12 @@ public class Asset : ConfigNodePersistenceBase
     // MinDiameter <= diameter && diameter < MaxDiameter;
     // TODO actually surface this to the UI so this doesn't explode.
     // TODO validate continuity of supported ranges.
+
+    public static (float stretchA, float stretchB) NegotiateAspectRatio(
+        Asset a, Asset b, float biasA)
+    {
+        // TODO: respect stretch limits.
+        var targetAspect = a.AspectRatio * biasA + b.AspectRatio * (1f - biasA);
+        return (targetAspect / a.AspectRatio, targetAspect / b.AspectRatio);
+    }
 }

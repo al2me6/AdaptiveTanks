@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AdaptiveTanks.Extensions;
 using ROUtils.DataTypes;
+using UnityEngine;
 
 namespace AdaptiveTanks;
 
@@ -17,7 +18,7 @@ public enum SegmentRoleSer : byte
 }
 
 [Flags]
-public enum capPositionSer : byte
+public enum CapPositionSer : byte
 {
     top = 1 << 0,
     bottom = 1 << 1,
@@ -34,13 +35,21 @@ public enum SegmentAlignmentSer : byte
 [LibraryLoad("AT_SEGMENT")]
 public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad, ILibraryLoadModify<SegmentDef>
 {
+    #region fields
+
     [Persistent] public string name;
     [Persistent] protected string displayName;
     [Persistent] public SegmentRoleSer role = SegmentRoleSer.tank;
-    [Persistent] public capPositionSer capPosition = capPositionSer.either;
+    [Persistent] public CapPositionSer capPosition = CapPositionSer.either;
     [Persistent] public SegmentAlignmentSer align = SegmentAlignmentSer.pinBothEnds;
+    [Persistent] public bool useStrictAlignment = false;
+    [Persistent] public float strictAlignmentBias = 0.5f;
 
     public Asset[] assets;
+
+    #endregion
+
+    #region deserialization
 
     public override void Load(ConfigNode node)
     {
@@ -65,6 +74,12 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad, ILibraryLoadM
             align = SegmentAlignmentSer.pinBothEnds;
         }
 
+        if (strictAlignmentBias is < 0f or > 1f)
+        {
+            Debug.LogWarning($"segment `{name}`: invalid alignment bias {strictAlignmentBias}");
+            strictAlignmentBias = Mathf.Clamp01(strictAlignmentBias);
+        }
+
         assets = node.LoadAllFromNodes<Asset>().OrderBy(asset => asset.AspectRatio).ToArray();
         if (assets.Length == 0)
         {
@@ -81,8 +96,32 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad, ILibraryLoadM
         node.WriteAllToNodes(assets);
     }
 
+    #endregion
+
+    #region library
+
     public string ItemName() => name;
+
+    public static readonly SegmentDef CoreAccessorySurrogate = new()
+    {
+        name = "__ATCoreAccessorySurrogate",
+        displayName = "Core Accessory (Placeholder)",
+        role = SegmentRoleSer.accessory,
+        align = SegmentAlignmentSer.pinInteriorEnd,
+        assets = [new Asset { nativeHeight = 0f }]
+    };
+
+    public void PostLoadModify(ref Dictionary<string, SegmentDef> items)
+    {
+        items.Add(CoreAccessorySurrogate.name, CoreAccessorySurrogate);
+    }
+
+    #endregion
+
     public string DisplayName => displayName ?? name;
+
+    public bool IsAccessory => role == SegmentRoleSer.accessory;
+    public bool IsFueled => !IsAccessory;
 
     public bool Supports(SegmentRole targetRole) => targetRole switch
     {
@@ -91,24 +130,21 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad, ILibraryLoadM
         SegmentRole.TerminatorTop =>
             (role.HasFlag(SegmentRoleSer.tankCapTerminal)
              || role.HasFlag(SegmentRoleSer.accessory))
-            && capPosition.HasFlag(capPositionSer.top),
+            && capPosition.HasFlag(CapPositionSer.top),
         SegmentRole.TerminatorBottom =>
             (role.HasFlag(SegmentRoleSer.tankCapTerminal)
              || role.HasFlag(SegmentRoleSer.accessory))
-            && capPosition.HasFlag(capPositionSer.bottom),
+            && capPosition.HasFlag(CapPositionSer.bottom),
         SegmentRole.Intertank =>
             role.HasFlag(SegmentRoleSer.intertank),
         SegmentRole.TankCapInternalTop =>
             role.HasFlag(SegmentRoleSer.tankCapInternal)
-            && capPosition.HasFlag(capPositionSer.top),
+            && capPosition.HasFlag(CapPositionSer.top),
         SegmentRole.TankCapInternalBottom =>
             role.HasFlag(SegmentRoleSer.tankCapInternal)
-            && capPosition.HasFlag(capPositionSer.bottom),
+            && capPosition.HasFlag(CapPositionSer.bottom),
         _ => throw new ArgumentOutOfRangeException(nameof(targetRole))
     };
-
-    public bool IsAccessory => role == SegmentRoleSer.accessory;
-    public bool IsFueled => !IsAccessory;
 
     public bool CanToggleAlignment =>
         align == (SegmentAlignmentSer.pinBothEnds | SegmentAlignmentSer.pinInteriorEnd);
@@ -124,18 +160,4 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad, ILibraryLoadM
         assets.Where(a => a.SupportsDiameter(diameter));
 
     public Asset GetFirstAssetForDiameter(float diameter) => GetAssetsForDiameter(diameter).First();
-
-    public static readonly SegmentDef CoreAccessorySurrogate = new()
-    {
-        name = "__ATCoreAccessorySurrogate",
-        displayName = "Core Accessory (Placeholder)",
-        role = SegmentRoleSer.accessory,
-        align = SegmentAlignmentSer.pinInteriorEnd,
-        assets = [new Asset { nativeHeight = 0f }]
-    };
-
-    public void PostLoadModify(ref Dictionary<string, SegmentDef> items)
-    {
-        items.Add(CoreAccessorySurrogate.name, CoreAccessorySurrogate);
-    }
 }

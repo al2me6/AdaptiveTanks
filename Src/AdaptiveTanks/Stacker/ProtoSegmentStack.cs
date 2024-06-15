@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using AdaptiveTanks.Utils;
 using UnityEngine;
@@ -6,12 +7,18 @@ using UnityEngine;
 namespace AdaptiveTanks;
 
 #nullable enable
+using Role = SegmentRole;
+using Alignment = SegmentAlignment;
 
 internal abstract record ProtoSegment;
 
-internal record ProtoSegmentFixed(SegmentRole Role, Asset Asset) : ProtoSegment;
+internal record ProtoSegmentFixed(Role Role, Asset Asset) : ProtoSegment
+{
+    public float ForceStretch { get; set; } = 1f;
+    public float ForcedAspectRatio => ForceStretch * Asset.AspectRatio;
+}
 
-internal record ProtoSegmentTerminator(SegmentRole Role, Asset Asset, SegmentAlignment Align)
+internal record ProtoSegmentTerminator(Role Role, Asset Asset, Alignment Align)
     : ProtoSegmentFixed(Role, Asset);
 
 internal record ProtoSegmentFlex(SegmentDef Segment, float FlexFactor) : ProtoSegment
@@ -19,12 +26,12 @@ internal record ProtoSegmentFlex(SegmentDef Segment, float FlexFactor) : ProtoSe
     public BodySolution? Solution { get; set; }
 }
 
-internal record ProtoSegmentStack(float Diameter, float Height)
+internal class ProtoSegmentStack(float Diameter, float Height)
 {
     private List<ProtoSegment> ProtoSegments { get; } = [];
 
     public void AddTerminator(
-        SelectedSegments segments, CapPosition position, SegmentAlignment align)
+        SelectedSegments segments, CapPosition position, Alignment align)
     {
         var role = position.AsRoleTerminator();
         ProtoSegments.Add(new ProtoSegmentTerminator(
@@ -33,13 +40,13 @@ internal record ProtoSegmentStack(float Diameter, float Height)
             align));
     }
 
-    public void AddFixed(SelectedSegments segments, SegmentRole role)
+    public void AddFixed(SelectedSegments segments, Role role)
     {
         ProtoSegments.Add(
             new ProtoSegmentFixed(role, segments[role]!.GetFirstAssetForDiameter(Diameter)));
     }
 
-    public void TryAddFixed(SelectedSegments segments, SegmentRole role)
+    public void TryAddFixed(SelectedSegments segments, Role role)
     {
         if (segments[role] == null) return;
         AddFixed(segments, role);
@@ -50,16 +57,41 @@ internal record ProtoSegmentStack(float Diameter, float Height)
         ProtoSegments.Add(new ProtoSegmentFlex(segment, factor));
     }
 
-    public SegmentStack Elaborate()
+    protected float TotalAspectRatio => Height / Diameter;
+
+    protected float FixedAspectRatio() => ProtoSegments
+        .WhereOfType<ProtoSegmentFixed>()
+        .Where(seg => seg is not ProtoSegmentTerminator { Align: Alignment.PinInteriorEnd })
+        .Select(seg => seg.ForcedAspectRatio)
+        .Sum();
+
+    public static void NegotiateStrictAlignment(
+        ProtoSegmentStack skin, ProtoSegmentStack core)
     {
-        var aspectRatio = Height / Diameter;
+        if (skin.ProtoSegments.Count != core.ProtoSegments.Count)
+        {
+            Debug.LogError("mismatched skin and core proto stacks");
+        }
 
-        var fixedAspect = ProtoSegments
-            .WhereOfType<ProtoSegmentFixed>()
-            .Where(seg => seg is not ProtoSegmentTerminator(_, _, SegmentAlignment.PinInteriorEnd))
-            .Select(seg => seg.Asset.AspectRatio)
-            .Sum();
+        var maxIdx = Math.Min(skin.ProtoSegments.Count, core.ProtoSegments.Count);
+        for (var i = 0; i < maxIdx; ++i)
+        {
+            if (skin.ProtoSegments[i] is not ProtoSegmentFixed skinSeg ||
+                core.ProtoSegments[i] is not ProtoSegmentFixed coreSeg) continue;
 
+            if (!skinSeg.Asset.Segment.useStrictAlignment) continue;
+
+            if (skinSeg is ProtoSegmentTerminator { Align: Alignment.PinInteriorEnd } ||
+                coreSeg is ProtoSegmentTerminator { Align: Alignment.PinInteriorEnd })
+                continue;
+
+            (skinSeg.ForceStretch, coreSeg.ForceStretch) = Asset.NegotiateAspectRatio(
+                skinSeg.Asset, coreSeg.Asset, skinSeg.Asset.Segment.strictAlignmentBias);
+        }
+    }
+
+    public void SolveFlexSegments()
+    {
         var totalFlexFactor = ProtoSegments
             .WhereOfType<ProtoSegmentFlex>()
             .Select(seg => seg.FlexFactor)
@@ -70,7 +102,7 @@ internal record ProtoSegmentStack(float Diameter, float Height)
             Debug.LogError($"non-unity total flex factor {totalFlexFactor}");
         }
 
-        var targetFlexAspect = aspectRatio - fixedAspect;
+        var targetFlexAspect = TotalAspectRatio - FixedAspectRatio();
 
         foreach (var flexProtoSegment in ProtoSegments.WhereOfType<ProtoSegmentFlex>())
         {
@@ -79,13 +111,19 @@ internal record ProtoSegmentStack(float Diameter, float Height)
                 flexProtoSegment.Segment.GetAssetsForDiameter(Diameter).ToArray(),
                 targetFlexAspect * contribution);
         }
+    }
 
-        var solvedFlexAspect = ProtoSegments
-            .WhereOfType<ProtoSegmentFlex>()
-            .Select(seg => seg.Solution!.SolutionAspectRatio())
-            .Sum();
-        var adjustedFixedAspect = aspectRatio - solvedFlexAspect;
-        var fixedStretchFactor = fixedAspect / adjustedFixedAspect; // TODO respect maxStretch
+    public SegmentStack Elaborate()
+    {
+        // TODO: respect maxStretch
+        // TODO: this needs to be negotiated
+        // var solvedFlexAspect = ProtoSegments
+        //     .WhereOfType<ProtoSegmentFlex>()
+        //     .Select(seg => seg.Solution!.SolutionAspectRatio())
+        //     .Sum();
+        // var adjustedFixedAspect = TotalAspectRatio - solvedFlexAspect;
+        // var fixedStretchFactor = FixedAspectRatio() / adjustedFixedAspect;
+        var fixedStretchFactor = 1f;
 
         var stack = new SegmentStack(Diameter, Height);
         var baseline = 0f;
@@ -94,10 +132,12 @@ internal record ProtoSegmentStack(float Diameter, float Height)
         {
             switch (ProtoSegments[i])
             {
-                case ProtoSegmentTerminator(var role, var asset, SegmentAlignment.PinInteriorEnd):
+                case ProtoSegmentTerminator(var role, var asset, Alignment.PinInteriorEnd)
                 {
-                    if (!(i == 0 && role == SegmentRole.TerminatorBottom)
-                        && !(i == ProtoSegments.Count - 1 && role == SegmentRole.TerminatorTop))
+                    ForcedAspectRatio: var forcedAspect, ForceStretch: var forceStretch
+                }:
+                    if (!(i == 0 && role == Role.TerminatorBottom)
+                        && !(i == ProtoSegments.Count - 1 && role == Role.TerminatorTop))
                     {
                         Debug.LogError("terminator in unexpected position or with unexpected role");
                     }
@@ -107,23 +147,21 @@ internal record ProtoSegmentStack(float Diameter, float Height)
                     // As the bottom, the baseline (i.e. 0) must be shifted below 0.
                     // As it does not count for height, it is also not stretched.
                     // TODO: ^ This seems like a bad idea.
-                    if (role == SegmentRole.TerminatorBottom) baseline -= asset.AspectRatio;
-                    stack.Add(role, asset, baseline, 1f);
-                    baseline += asset.AspectRatio;
+                    if (role == Role.TerminatorBottom) baseline -= forcedAspect;
+                    stack.Add(role, asset, baseline, forceStretch);
+                    baseline += forcedAspect;
                     break;
-                }
-                case ProtoSegmentFixed(var role, var asset):
+                case ProtoSegmentFixed(var role, var asset)
                 {
-                    stack.Add(role, asset, baseline, fixedStretchFactor);
-                    baseline += asset.AspectRatio * fixedStretchFactor;
+                    ForcedAspectRatio: var forcedAspect, ForceStretch: var forceStretch
+                }:
+                    stack.Add(role, asset, baseline, forceStretch * fixedStretchFactor);
+                    baseline += forcedAspect * fixedStretchFactor;
                     break;
-                }
                 case ProtoSegmentFlex { Solution: var bodySolution }:
-                {
                     stack.Add(bodySolution!, baseline);
                     baseline += bodySolution!.SolutionAspectRatio();
                     break;
-                }
             }
         }
 
