@@ -77,6 +77,9 @@ public static class BodySolver
             else break;
         }
 
+        // Sort largest to smallest.
+        stack.Sort((a, b) => b.Asset.AspectRatio.CompareTo(a.Asset.AspectRatio));
+
         var solution = new BodySolution(stack, aspectRatio);
         Stretch(ref solution);
 
