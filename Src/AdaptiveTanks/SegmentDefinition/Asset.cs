@@ -36,6 +36,8 @@ public class Asset : ConfigNodePersistenceBase
         node.WriteAllToNodes(textures);
     }
 
+    public SegmentDef Segment { get; set; }
+
     public float AspectRatio => nativeHeight / nativeDiameter;
 
     public float MinDiameter => diameterRange.x;

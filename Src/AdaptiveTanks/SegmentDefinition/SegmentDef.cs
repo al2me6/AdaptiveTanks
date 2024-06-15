@@ -71,6 +71,8 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad, ILibraryLoadM
             Debug.LogWarning($"segment `{name}` contained no assets; adding default");
             assets = [new Asset()];
         }
+
+        foreach (var asset in assets) asset.Segment = this;
     }
 
     public override void Save(ConfigNode node)
