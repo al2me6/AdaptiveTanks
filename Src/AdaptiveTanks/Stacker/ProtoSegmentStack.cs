@@ -14,14 +14,15 @@ using static ProtoSegment;
 // A poor man's tagged union.
 internal abstract record ProtoSegment
 {
-    internal record Fixed(Role Role, Asset Asset) : ProtoSegment
+    internal record Fixed(Role Role, SegmentDef Segment) : ProtoSegment
     {
+        public Asset? Asset { get; set; } = null;
         internal float ForceStretch { get; set; } = 1f;
-        internal virtual float AdjustedAspectRatio => ForceStretch * Asset.AspectRatio;
+        internal virtual float AdjustedAspectRatio => ForceStretch * Asset!.AspectRatio;
     }
 
-    internal record Terminator(CapPosition Position, Asset Asset, Alignment Align)
-        : Fixed(Position.AsRoleTerminator(), Asset)
+    internal record Terminator(CapPosition Position, SegmentDef Segment, Alignment Align)
+        : Fixed(Position.AsRoleTerminator(), Segment)
     {
         internal float AspectRatioExtension { get; set; } = 0f;
 
@@ -52,10 +53,9 @@ internal class ProtoSegmentStack
         TryAddFixed(segments, Role.TankCapInternalBottom);
 
         var totalFlexFactor = flexFactors.Sum();
-        var intertankAsset = segments.Intertank?.GetFirstAssetForDiameter(Diameter);
         for (var i = 0; i < flexFactors.Length; ++i)
         {
-            if (i > 0) ProtoSegments.Add(new Fixed(Role.Intertank, intertankAsset!));
+            if (i > 0) ProtoSegments.Add(new Fixed(Role.Intertank, segments.Intertank!));
             ProtoSegments.Add(new Flex(flexAssets, flexFactors[i] / totalFlexFactor));
         }
 
@@ -63,16 +63,11 @@ internal class ProtoSegmentStack
         AddTerminator(segments, CapPosition.Top, segments.AlignTop);
     }
 
-    private void AddTerminator(SelectedSegments segments, CapPosition position, Alignment align)
-    {
-        ProtoSegments.Add(new Terminator(
-            position,
-            segments[position.AsRoleTerminator()]!.GetFirstAssetForDiameter(Diameter),
-            align));
-    }
+    private void AddTerminator(SelectedSegments segments, CapPosition position, Alignment align) =>
+        ProtoSegments.Add(new Terminator(position, segments[position.AsRoleTerminator()]!, align));
 
-    private void AddFixed(SelectedSegments segments, Role role) => ProtoSegments.Add(
-        new Fixed(role, segments[role]!.GetFirstAssetForDiameter(Diameter)));
+    private void AddFixed(SelectedSegments segments, Role role) =>
+        ProtoSegments.Add(new Fixed(role, segments[role]!));
 
     private void TryAddFixed(SelectedSegments segments, Role role)
     {
@@ -89,17 +84,14 @@ internal class ProtoSegmentStack
 
     private float FueledAspectRatio() => TotalAspectRatio - ProtoSegments
         .WhereOfType<Terminator>()
-        .Where(seg => seg.Asset.Segment.IsAccessory)
+        .Where(seg => seg.Asset!.Segment.IsAccessory)
         .Select(seg => seg.AdjustedAspectRatio)
         .Sum();
 
-    public static void NegotiateSegmentAlignment(
-        ProtoSegmentStack skin, ProtoSegmentStack core)
+    public static void NegotiateSegmentAlignment(ProtoSegmentStack skin, ProtoSegmentStack core)
     {
         if (skin.ProtoSegments.Count != core.ProtoSegments.Count)
-        {
             Debug.LogError("mismatched skin and core proto stacks");
-        }
 
         var maxIdx = Math.Min(skin.ProtoSegments.Count, core.ProtoSegments.Count);
         for (var i = 0; i < maxIdx; ++i)
@@ -107,10 +99,15 @@ internal class ProtoSegmentStack
             if (skin.ProtoSegments[i] is not Fixed skinSeg ||
                 core.ProtoSegments[i] is not Fixed coreSeg) continue;
 
+            // Select fixed assets. The skin is negotiated based on the core asset.
+            coreSeg.Asset = coreSeg.Segment.GetFirstAssetForDiameter(core.Diameter);
+            skinSeg.Asset =
+                skinSeg.Segment.GetAssetOfNearestRatio(skin.Diameter, coreSeg.Asset.AspectRatio);
+
             if (skinSeg is Terminator { Align: Alignment.PinInteriorEnd } skinSegTerm &&
                 coreSeg is Terminator { Align: Alignment.PinInteriorEnd } coreSegTerm)
             {
-                // PinInteriorEnd is implemented by padding the shorter of the two terminators
+                // pinInteriorEnd is implemented by padding the shorter of the two terminators
                 // to have the same 'virtual' aspect ratio as the longer.
                 var skinNativeAspect = skinSeg.Asset.AspectRatio;
                 var coreNativeAspect = coreSeg.Asset.AspectRatio;
@@ -210,13 +207,13 @@ internal class ProtoSegmentStack
         var stack = new SegmentStack(Diameter, Height);
         var baseline = 0f;
 
-        for (var i = 0; i < ProtoSegments.Count; i++)
+        foreach (var seg in ProtoSegments)
         {
-            switch (ProtoSegments[i])
+            switch (seg)
             {
-                case Terminator(var position, var asset, _)
+                case Terminator
                 {
-                    Role: var role,
+                    Position: var position, Role: var role, Asset: var asset,
                     ForceStretch: var forceStretch, AspectRatioExtension: var aspectExtension
                 }:
                     // Note that for a bottom cap, the aspect ratio extension is below the segment.
@@ -224,10 +221,11 @@ internal class ProtoSegmentStack
                     if (isBottom) baseline += aspectExtension * fixedStretchFactor;
                     stack.Add(role, asset, baseline, forceStretch * fixedStretchFactor);
                     if (!isBottom) baseline += aspectExtension * fixedStretchFactor;
-                    baseline += asset.AspectRatio * forceStretch * fixedStretchFactor;
+                    baseline += asset!.AspectRatio * forceStretch * fixedStretchFactor;
                     break;
-                case Fixed(var role, var asset)
+                case Fixed
                 {
+                    Role: var role, Asset: var asset,
                     AdjustedAspectRatio: var adjustedAspect, ForceStretch: var forceStretch
                 }:
                     stack.Add(role, asset, baseline, forceStretch * fixedStretchFactor);

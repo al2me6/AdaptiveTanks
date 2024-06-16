@@ -162,5 +162,20 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad, ILibraryLoadM
     public IEnumerable<Asset> GetAssetsForDiameter(float diameter) =>
         assets.Where(a => a.SupportsDiameter(diameter));
 
+    public Asset GetAssetOfNearestRatio(float diameter, float targetAspect)
+    {
+        Asset best = null;
+        var bestDeviation = float.PositiveInfinity;
+        foreach (var candidate in GetAssetsForDiameter(diameter))
+        {
+            var candidateDeviation = Mathf.Abs(candidate.AspectRatio - targetAspect);
+            if (candidateDeviation > bestDeviation) continue;
+            best = candidate;
+            bestDeviation = candidateDeviation;
+        }
+
+        return best;
+    }
+
     public Asset GetFirstAssetForDiameter(float diameter) => GetAssetsForDiameter(diameter).First();
 }
