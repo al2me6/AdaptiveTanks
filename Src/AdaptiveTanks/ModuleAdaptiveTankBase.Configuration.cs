@@ -23,6 +23,7 @@ public partial class ModuleAdaptiveTankBase
         UpdateAvailableVariants(Layer.Core);
         UpdateAvailableAlignments();
         UpdateDimensionLimits();
+        UpdateAvailableIntertanks();
     }
 
     protected void InitializeEditorPAW()
@@ -56,6 +57,8 @@ public partial class ModuleAdaptiveTankBase
 
         Fields[nameof(noseAlignInteriorEnd)].AddSelfAndSymmetryListener(OnAlignmentModified);
         Fields[nameof(mountAlignInteriorEnd)].AddSelfAndSymmetryListener(OnAlignmentModified);
+
+        Fields[nameof(useIntertank)].AddSelfAndSymmetryListener(OnIntertankModified);
     }
 
     protected void InitializeDimensionSelectors()
@@ -121,7 +124,7 @@ public partial class ModuleAdaptiveTankBase
         tank: skinBodyVariant,
         terminatorTop: skinNoseVariant,
         terminatorBottom: skinMountVariant,
-        intertank: SkinStyle.SegmentsByRole[Role.Intertank].First().name,
+        intertank: useIntertank ? SkinStyle.SegmentsByRole[Role.Intertank].First().name : null,
         tankCapInternalTop: TerminatorIsAccessory(Cap.Top) // TODO select
             ? SkinStyle.SegmentsByRole[Role.TankCapInternalTop].First().name
             : null,
@@ -135,7 +138,7 @@ public partial class ModuleAdaptiveTankBase
         tank: coreBodyVariant,
         terminatorTop: coreNoseVariant,
         terminatorBottom: coreMountVariant,
-        intertank: CoreStyle.SegmentsByRole[Role.Intertank].First().name,
+        intertank: useIntertank ? CoreStyle.SegmentsByRole[Role.Intertank].First().name : null,
         tankCapInternalTop: TerminatorIsAccessory(Cap.Top) // TODO select
             ? CoreStyle.SegmentsByRole[Role.TankCapInternalTop].First().name
             : null,
@@ -189,8 +192,13 @@ public partial class ModuleAdaptiveTankBase
             case nameof(skinStyle):
                 UpdateAvailableVariants(Layer.Skin);
                 UpdateAvailableVariants(Layer.Core);
+                UpdateAvailableIntertanks();
                 break;
-            case nameof(coreStyle) or nameof(skinNoseVariant) or nameof(skinMountVariant):
+            case nameof(coreStyle):
+                UpdateAvailableVariants(Layer.Core);
+                UpdateAvailableIntertanks();
+                break;
+            case nameof(skinNoseVariant) or nameof(skinMountVariant):
                 UpdateAvailableVariants(Layer.Core);
                 break;
         }
@@ -201,6 +209,11 @@ public partial class ModuleAdaptiveTankBase
     }
 
     protected void OnAlignmentModified(BaseField f, object obj)
+    {
+        ReStack();
+    }
+
+    protected void OnIntertankModified(BaseField f, object obj)
     {
         ReStack();
     }
@@ -277,6 +290,15 @@ public partial class ModuleAdaptiveTankBase
                     coreTerminator.TryGetOnlyAlignment()!.Value.IsInteriorEnd();
                 break;
         }
+    }
+
+    public void UpdateAvailableIntertanks()
+    {
+        var field = Fields[nameof(useIntertank)];
+        if (SkinStyle.SupportsIntertank && CoreStyle.SupportsIntertank)
+            field.guiActiveEditor = true;
+        else
+            field.guiActiveEditor = useIntertank = false;
     }
 
     #endregion

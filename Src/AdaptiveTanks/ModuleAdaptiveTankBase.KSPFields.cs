@@ -73,7 +73,7 @@ public partial class ModuleAdaptiveTankBase
     [KSPField(isPersistant = true, guiName = "Core Nose")] [UI_ChooseOption]
     public string coreNoseVariant;
 
-    [KSPField(isPersistant = true, guiName = "Nose alignment:")]
+    [KSPField(isPersistant = true, guiName = "Nose Alignment")]
     [UI_Toggle(enabledText = "staggered", disabledText = "flushed")]
     public bool noseAlignInteriorEnd;
 
@@ -89,9 +89,13 @@ public partial class ModuleAdaptiveTankBase
     [KSPField(isPersistant = true, guiName = "Core Mount")] [UI_ChooseOption]
     public string coreMountVariant;
 
-    [KSPField(isPersistant = true, guiName = "Mount alignment:")]
+    [KSPField(isPersistant = true, guiName = "Mount Alignment")]
     [UI_Toggle(enabledText = "staggered", disabledText = "flushed")]
     public bool mountAlignInteriorEnd;
+
+    [KSPField(isPersistant = true, guiName = "Intertank")]
+    [UI_Toggle(enabledText = "enabled", disabledText = "disabled")]
+    public bool useIntertank;
 
     [KSPField(isPersistant = true, guiName = "Intertank Fraction", guiActiveEditor = true)]
     [UI_FloatRange(minValue = 0f, maxValue = 1f, stepIncrement = 0.025f)]

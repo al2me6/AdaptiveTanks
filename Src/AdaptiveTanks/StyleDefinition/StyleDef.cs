@@ -36,6 +36,8 @@ public abstract class StyleDef : ConfigNodePersistenceBase, ILibraryLoad
     public string DisplayName => displayName ?? name;
 
     public IReadOnlyDictionary<SegmentRole, List<SegmentDef>> SegmentsByRole { get; private set; }
+
+    public bool SupportsIntertank => SegmentsByRole[SegmentRole.Intertank].Count > 0;
 }
 
 [LibraryLoad("AT_SKIN_STYLE", loadOrder: 1)]
