@@ -77,11 +77,17 @@ public partial class ModuleAdaptiveTankBase
     [UI_Toggle(enabledText = "staggered", disabledText = "flushed")]
     public bool noseAlignInteriorEnd;
 
+    [KSPField(isPersistant = true, guiName = "Skin Body")] [UI_ChooseOption]
+    public string skinBodyVariant;
+
     [KSPField(isPersistant = true, guiName = "Core Body")] [UI_ChooseOption]
     public string coreBodyVariant;
 
-    [KSPField(isPersistant = true, guiName = "Skin Body")] [UI_ChooseOption]
-    public string skinBodyVariant;
+    [KSPField(isPersistant = true, guiName = "Skin Intertank")] [UI_ChooseOption]
+    public string skinIntertankVariant;
+
+    [KSPField(isPersistant = true, guiName = "Core Intertank")] [UI_ChooseOption]
+    public string coreIntertankVariant;
 
     [KSPField(isPersistant = true, guiName = "Skin Mount")] [UI_ChooseOption]
     public string skinMountVariant;
