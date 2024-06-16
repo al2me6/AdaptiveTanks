@@ -81,8 +81,9 @@ internal class ProtoSegmentStack
 
     private float TotalAspectRatio => Height / Diameter;
 
-    private float FixedAspectRatio() => ProtoSegments
+    private float CapAndAccessoryAspectRatio() => ProtoSegments
         .WhereOfType<Fixed>()
+        .Where(seg => seg.Role != Role.Intertank)
         .Select(seg => seg.AdjustedAspectRatio)
         .Sum();
 
@@ -132,18 +133,26 @@ internal class ProtoSegmentStack
         for (var i = 1; i < ProtoSegments.Count - 1; ++i)
         {
             if (ProtoSegments[i] is not Flex segFlex) continue;
+
             // Contract: tanks always have caps. Thus, the neighboring segments must be fixed
             // and in particular must be either intertanks or tank caps. Never an accessory
             // or another flex segment.
             var segPrev = (Fixed)ProtoSegments[i - 1];
             var segNext = (Fixed)ProtoSegments[i + 1];
+
             // An intertank contains only half of this propellant.
             var fixedContribution =
                 segPrev.AdjustedAspectRatio * (segPrev.Role == Role.Intertank ? 0.5f : 1f)
                 + segNext.AdjustedAspectRatio * (segNext.Role == Role.Intertank ? 0.5f : 1f);
             var flexContribution = FueledAspectRatio() * segFlex.FlexFactor - fixedContribution;
             if (flexContribution <= 0) break;
-            segFlex.Solution = BodySolver.Solve(segFlex.Assets, flexContribution);
+
+            // TODO: deal with zero-height solutions more properly.
+            // This is a reasonable use-case. (e.g. Shuttle ET.)
+            var flexSolution = BodySolver.Solve(segFlex.Assets, flexContribution);
+            if (flexSolution.SolutionAspectRatio() == 0f) break;
+
+            segFlex.Solution = flexSolution;
         }
     }
 
@@ -158,9 +167,10 @@ internal class ProtoSegmentStack
             {
                 if (foundFirstFlex) continue;
                 foundFirstFlex = true;
+                var newFlexAspect = TotalAspectRatio - CapAndAccessoryAspectRatio();
                 var replacementFlex = new Flex(segFlex.Assets, 1f)
                 {
-                    Solution = BodySolver.Solve(segFlex.Assets, FueledAspectRatio())
+                    Solution = BodySolver.Solve(segFlex.Assets, newFlexAspect)
                 };
                 newProtoSegments.Add(replacementFlex);
             }
