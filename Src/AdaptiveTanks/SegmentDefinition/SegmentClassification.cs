@@ -56,10 +56,13 @@ public static class SegmentClassificationExtensions
         _ => throw new ArgumentOutOfRangeException(nameof(position))
     };
 
-    public static SegmentAlignment Toggle(this SegmentAlignment alignment) => alignment switch
+    public static bool IsInteriorEnd(this SegmentAlignment align) =>
+        align == SegmentAlignment.PinInteriorEnd;
+
+    public static SegmentAlignment Toggle(this SegmentAlignment align) => align switch
     {
         SegmentAlignment.PinBothEnds => SegmentAlignment.PinInteriorEnd,
         SegmentAlignment.PinInteriorEnd => SegmentAlignment.PinBothEnds,
-        _ => throw new ArgumentOutOfRangeException(nameof(alignment))
+        _ => throw new ArgumentOutOfRangeException(nameof(align))
     };
 }

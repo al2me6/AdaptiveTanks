@@ -53,6 +53,9 @@ public partial class ModuleAdaptiveTankBase
         Fields[nameof(coreNoseVariant)].AddSelfAndSymmetryListener(OnSegmentModified);
         Fields[nameof(coreBodyVariant)].AddSelfAndSymmetryListener(OnSegmentModified);
         Fields[nameof(coreMountVariant)].AddSelfAndSymmetryListener(OnSegmentModified);
+
+        Fields[nameof(noseAlignInteriorEnd)].AddSelfAndSymmetryListener(OnAlignmentModified);
+        Fields[nameof(mountAlignInteriorEnd)].AddSelfAndSymmetryListener(OnAlignmentModified);
     }
 
     protected void InitializeDimensionSelectors()
@@ -125,8 +128,8 @@ public partial class ModuleAdaptiveTankBase
         tankCapInternalBottom: TerminatorIsAccessory(Cap.Bottom)
             ? SkinStyle.SegmentsByRole[Role.TankCapInternalBottom].First().name
             : null,
-        alignTop: noseAlign,
-        alignBottom: mountAlign);
+        alignTop: Alignment(Cap.Top),
+        alignBottom: Alignment(Cap.Bottom));
 
     public SelectedSegments CoreSegments() => new(
         tank: coreBodyVariant,
@@ -139,25 +142,34 @@ public partial class ModuleAdaptiveTankBase
         tankCapInternalBottom: TerminatorIsAccessory(Cap.Bottom)
             ? CoreStyle.SegmentsByRole[Role.TankCapInternalBottom].First().name
             : null,
-        alignTop: noseAlign,
-        alignBottom: mountAlign);
+        alignTop: Alignment(Cap.Top),
+        alignBottom: Alignment(Cap.Bottom));
 
     public bool TerminatorIsAccessory(Cap position) =>
         Segment(Layer.Skin, position.AsRoleTerminator()).IsAccessory;
 
-    protected ref SegmentAlignment Alignment(Cap position)
+    protected static string AlignmentToggleEventName(Cap position) => position switch
     {
-        if (position == Cap.Top) return ref noseAlign;
-        if (position == Cap.Bottom) return ref mountAlign;
+        Cap.Top => nameof(noseAlignInteriorEnd),
+        Cap.Bottom => nameof(mountAlignInteriorEnd),
+        _ => throw new ArgumentOutOfRangeException(nameof(position))
+    };
+
+    protected ref bool AlignInteriorEnd(Cap position)
+    {
+        if (position == Cap.Top) return ref noseAlignInteriorEnd;
+        if (position == Cap.Bottom) return ref mountAlignInteriorEnd;
         throw new ArgumentOutOfRangeException(nameof(position));
     }
 
-    protected static string AlignmentToggleEventName(Cap position) => position switch
+    protected SegmentAlignment Alignment(Cap position) => position switch
     {
-        Cap.Top => nameof(ToggleNoseAlignment),
-        Cap.Bottom => nameof(ToggleMountAlignment),
+        Cap.Top => noseAlignInteriorEnd,
+        Cap.Bottom => mountAlignInteriorEnd,
         _ => throw new ArgumentOutOfRangeException(nameof(position))
-    };
+    }
+        ? SegmentAlignment.PinInteriorEnd
+        : SegmentAlignment.PinBothEnds;
 
     #endregion
 
@@ -185,6 +197,11 @@ public partial class ModuleAdaptiveTankBase
 
         UpdateDimensionLimits();
         UpdateAvailableAlignments();
+        ReStack();
+    }
+
+    protected void OnAlignmentModified(BaseField f, object obj)
+    {
         ReStack();
     }
 
@@ -241,46 +258,25 @@ public partial class ModuleAdaptiveTankBase
         var role = position.AsRoleTerminator();
         var skinTerminator = Segment(Layer.Skin, role);
         var coreTerminator = Segment(Layer.Core, role);
-        var kspEvent = Events[AlignmentToggleEventName(position)];
+        var field = Fields[AlignmentToggleEventName(position)];
 
         switch (skinTerminator.CanToggleAlignment, coreTerminator.CanToggleAlignment)
         {
             case (true, true):
-                kspEvent.guiActiveEditor = true;
-                UpdateAlignmentToggleText(position);
+                field.guiActiveEditor = true;
                 break;
             case (false, true):
-                kspEvent.guiActiveEditor = false;
-                Alignment(position) = skinTerminator.TryGetOnlyAlignment()!.Value;
+                field.guiActiveEditor = false;
+                AlignInteriorEnd(position) =
+                    skinTerminator.TryGetOnlyAlignment()!.Value.IsInteriorEnd();
                 break;
             case (true, false) or (false, false):
                 // Note that in case of a mismatch, the core takes precedence.
-                kspEvent.guiActiveEditor = false;
-                Alignment(position) = coreTerminator.TryGetOnlyAlignment()!.Value;
+                field.guiActiveEditor = false;
+                AlignInteriorEnd(position) =
+                    coreTerminator.TryGetOnlyAlignment()!.Value.IsInteriorEnd();
                 break;
         }
-    }
-
-    #endregion
-
-    #region update execution
-
-    protected void ToggleAlignment(Cap position)
-    {
-        ref var align = ref Alignment(position);
-        align = align.Toggle();
-        UpdateAlignmentToggleText(position);
-        ReStack();
-    }
-
-    protected void UpdateAlignmentToggleText(Cap position)
-    {
-        Events[AlignmentToggleEventName(position)].guiName = Alignment(position) switch
-        {
-            SegmentAlignment.PinBothEnds => $"{position.AsNoseMount()}: flushed",
-            SegmentAlignment.PinInteriorEnd => $"{position.AsNoseMount()}: staggered",
-            _ => throw new ArgumentOutOfRangeException()
-        };
     }
 
     #endregion

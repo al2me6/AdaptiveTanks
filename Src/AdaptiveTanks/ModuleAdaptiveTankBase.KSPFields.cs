@@ -47,11 +47,11 @@ public partial class ModuleAdaptiveTankBase
     #region dimensions
 
     [KSPField(isPersistant = true, guiName = "Diameter", guiActiveEditor = true)]
-    [UI_FloatEdit(sigFigs = 4, useSI = true, unit = "m", scene = UI_Scene.Editor)]
+    [UI_FloatEdit(sigFigs = 4, useSI = true, unit = "m")]
     public float diameter;
 
     [KSPField(isPersistant = true, guiName = "Height", guiActiveEditor = true)]
-    [UI_FloatEdit(sigFigs = 4, useSI = true, unit = "m", scene = UI_Scene.Editor)]
+    [UI_FloatEdit(sigFigs = 4, useSI = true, unit = "m")]
     public float height;
 
     [KSPField(guiName = "Worst distortion", guiActiveEditor = true)] [UI_Label]
@@ -61,50 +61,41 @@ public partial class ModuleAdaptiveTankBase
 
     #region styling
 
-    [KSPField(isPersistant = true, guiName = "Skin Style", guiActiveEditor = true)]
-    [UI_ChooseOption]
+    [KSPField(isPersistant = true, guiName = "Skin Style")] [UI_ChooseOption]
     public string skinStyle;
 
-    [KSPField(isPersistant = true, guiName = "Skin Nose", guiActiveEditor = true)] [UI_ChooseOption]
-    public string skinNoseVariant;
-
-    [KSPField(isPersistant = true, guiName = "Skin Body", guiActiveEditor = true)] [UI_ChooseOption]
-    public string skinBodyVariant;
-
-    [KSPField(isPersistant = true, guiName = "Skin Mount", guiActiveEditor = true)]
-    [UI_ChooseOption]
-    public string skinMountVariant;
-
-    [KSPField(isPersistant = true, guiName = "Core Style", guiActiveEditor = true)]
-    [UI_ChooseOption]
+    [KSPField(isPersistant = true, guiName = "Core Style")] [UI_ChooseOption]
     public string coreStyle;
 
-    [KSPField(isPersistant = true, guiName = "Core Nose", guiActiveEditor = true)] [UI_ChooseOption]
+    [KSPField(isPersistant = true, guiName = "Skin Nose")] [UI_ChooseOption]
+    public string skinNoseVariant;
+
+    [KSPField(isPersistant = true, guiName = "Core Nose")] [UI_ChooseOption]
     public string coreNoseVariant;
 
-    [KSPField(isPersistant = true, guiName = "Core Body", guiActiveEditor = true)] [UI_ChooseOption]
+    [KSPField(isPersistant = true, guiName = "Nose alignment:")]
+    [UI_Toggle(enabledText = "staggered", disabledText = "flushed")]
+    public bool noseAlignInteriorEnd;
+
+    [KSPField(isPersistant = true, guiName = "Core Body")] [UI_ChooseOption]
     public string coreBodyVariant;
 
-    [KSPField(isPersistant = true, guiName = "Core Mount", guiActiveEditor = true)]
-    [UI_ChooseOption]
+    [KSPField(isPersistant = true, guiName = "Skin Body")] [UI_ChooseOption]
+    public string skinBodyVariant;
+
+    [KSPField(isPersistant = true, guiName = "Skin Mount")] [UI_ChooseOption]
+    public string skinMountVariant;
+
+    [KSPField(isPersistant = true, guiName = "Core Mount")] [UI_ChooseOption]
     public string coreMountVariant;
+
+    [KSPField(isPersistant = true, guiName = "Mount alignment:")]
+    [UI_Toggle(enabledText = "staggered", disabledText = "flushed")]
+    public bool mountAlignInteriorEnd;
 
     [KSPField(isPersistant = true, guiName = "Intertank Fraction", guiActiveEditor = true)]
     [UI_FloatRange(minValue = 0f, maxValue = 1f, stepIncrement = 0.025f)]
     public float intertankFraction = 0.5f;
-
-    [KSPField(isPersistant = true)] public SegmentAlignment noseAlign;
-    [KSPField(isPersistant = true)] public SegmentAlignment mountAlign;
-
-    #endregion
-
-    #region events
-
-    [KSPEvent(guiActiveEditor = true)]
-    protected void ToggleNoseAlignment() => ToggleAlignment(CapPosition.Top);
-
-    [KSPEvent(guiActiveEditor = true)]
-    protected void ToggleMountAlignment() => ToggleAlignment(CapPosition.Bottom);
 
     #endregion
 }
