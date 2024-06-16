@@ -29,18 +29,17 @@ public partial class ModuleAdaptiveTankBase
     public const string SkinStyleNodeName = "SkinStyle";
     public const string CoreStyleNodeName = "CoreStyle";
 
-    protected void LoadDeclaredStyles(ConfigNode node)
+    protected void LoadCustomDataFromConfig(ConfigNode node)
     {
         skinStyles = node.LoadAllNamesFromNodes(SkinStyleNodeName).ToArray();
         coreStyles = node.LoadAllNamesFromNodes(CoreStyleNodeName).ToArray();
+    }
 
-        if ((skinStyles.Length == 0 || coreStyles.Length == 0) &&
-            part.partInfo?.partPrefab is Part prefab)
-        {
-            var prefabPM = prefab.FindModuleImplementing<ModuleAdaptiveTankBase>();
-            skinStyles = prefabPM.skinStyles;
-            coreStyles = prefabPM.coreStyles;
-        }
+    protected void RestoreCustomData()
+    {
+        var prefabPM = part.partInfo.partPrefab.FindModuleImplementing<ModuleAdaptiveTankBase>();
+        skinStyles = prefabPM.skinStyles;
+        coreStyles = prefabPM.coreStyles;
     }
 
     #endregion

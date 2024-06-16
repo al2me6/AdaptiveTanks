@@ -2,9 +2,11 @@
 
 public abstract partial class ModuleAdaptiveTankBase : PartModule
 {
+    public static bool IsLoadingPrefab => !PartLoader.Instance.IsReady();
+
     public override void OnLoad(ConfigNode node)
     {
-        LoadDeclaredStyles(node);
+        if (IsLoadingPrefab) LoadCustomDataFromConfig(node);
     }
 
     public override void OnIconCreate() => InitializeConfigurationAndModel();
@@ -23,6 +25,7 @@ public abstract partial class ModuleAdaptiveTankBase : PartModule
     {
         if (_configAndModelInitialized) return;
         _configAndModelInitialized = true;
+        if (!IsLoadingPrefab) RestoreCustomData();
         InitializeConfiguration();
         InitializeModel();
     }
