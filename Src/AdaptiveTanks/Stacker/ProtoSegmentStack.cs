@@ -15,11 +15,15 @@ internal abstract record ProtoSegment;
 internal record ProtoSegmentFixed(Role Role, Asset Asset) : ProtoSegment
 {
     public float ForceStretch { get; set; } = 1f;
-    public float ForcedAspectRatio => ForceStretch * Asset.AspectRatio;
+    public virtual float AdjustedAspectRatio => ForceStretch * Asset.AspectRatio;
 }
 
 internal record ProtoSegmentTerminator(Role Role, Asset Asset, Alignment Align)
-    : ProtoSegmentFixed(Role, Asset);
+    : ProtoSegmentFixed(Role, Asset)
+{
+    public float AspectRatioExtension { get; set; } = 0f;
+    public override float AdjustedAspectRatio => base.AdjustedAspectRatio + AspectRatioExtension;
+}
 
 internal record ProtoSegmentFlex(SegmentDef Segment, float FlexFactor) : ProtoSegment
 {
@@ -61,11 +65,10 @@ internal class ProtoSegmentStack(float Diameter, float Height)
 
     protected float FixedAspectRatio() => ProtoSegments
         .WhereOfType<ProtoSegmentFixed>()
-        .Where(seg => seg is not ProtoSegmentTerminator { Align: Alignment.PinInteriorEnd })
-        .Select(seg => seg.ForcedAspectRatio)
+        .Select(seg => seg.AdjustedAspectRatio)
         .Sum();
 
-    public static void NegotiateStrictAlignment(
+    public static void NegotiateSegmentAlignment(
         ProtoSegmentStack skin, ProtoSegmentStack core)
     {
         if (skin.ProtoSegments.Count != core.ProtoSegments.Count)
@@ -79,14 +82,24 @@ internal class ProtoSegmentStack(float Diameter, float Height)
             if (skin.ProtoSegments[i] is not ProtoSegmentFixed skinSeg ||
                 core.ProtoSegments[i] is not ProtoSegmentFixed coreSeg) continue;
 
-            if (!skinSeg.Asset.Segment.useStrictAlignment) continue;
-
-            if (skinSeg is ProtoSegmentTerminator { Align: Alignment.PinInteriorEnd } ||
-                coreSeg is ProtoSegmentTerminator { Align: Alignment.PinInteriorEnd })
-                continue;
-
-            (skinSeg.ForceStretch, coreSeg.ForceStretch) = Asset.NegotiateAspectRatio(
-                skinSeg.Asset, coreSeg.Asset, skinSeg.Asset.Segment.strictAlignmentBias);
+            if (skinSeg is ProtoSegmentTerminator { Align: Alignment.PinInteriorEnd } skinSegTerm &&
+                coreSeg is ProtoSegmentTerminator { Align: Alignment.PinInteriorEnd } coreSegTerm)
+            {
+                // PinInteriorEnd is implemented by padding the shorter of the two terminators
+                // to have the same 'virtual' aspect ratio as the longer.
+                var skinNativeAspect = skinSeg.Asset.AspectRatio;
+                var coreNativeAspect = coreSeg.Asset.AspectRatio;
+                var padding = Mathf.Abs(skinNativeAspect - coreNativeAspect);
+                if (skinNativeAspect < coreNativeAspect)
+                    skinSegTerm.AspectRatioExtension = padding;
+                else
+                    coreSegTerm.AspectRatioExtension = padding;
+            }
+            else if (skinSeg.Asset.Segment.useStrictAlignment)
+            {
+                (skinSeg.ForceStretch, coreSeg.ForceStretch) = Asset.NegotiateAspectRatio(
+                    skinSeg.Asset, coreSeg.Asset, skinSeg.Asset.Segment.strictAlignmentBias);
+            }
         }
     }
 
@@ -132,31 +145,23 @@ internal class ProtoSegmentStack(float Diameter, float Height)
         {
             switch (ProtoSegments[i])
             {
-                case ProtoSegmentTerminator(var role, var asset, Alignment.PinInteriorEnd)
+                case ProtoSegmentTerminator(var role, var asset, _)
                 {
-                    ForcedAspectRatio: var forcedAspect, ForceStretch: var forceStretch
+                    ForceStretch: var forceStretch, AspectRatioExtension: var aspectExtension
                 }:
-                    if (!(i == 0 && role == Role.TerminatorBottom)
-                        && !(i == ProtoSegments.Count - 1 && role == Role.TerminatorTop))
-                    {
-                        Debug.LogError("terminator in unexpected position or with unexpected role");
-                    }
-
-                    // A terminator in pinInteriorEnds mode is stacked outside the formal height.
-                    // As the top, this makes no difference.
-                    // As the bottom, the baseline (i.e. 0) must be shifted below 0.
-                    // As it does not count for height, it is also not stretched.
-                    // TODO: ^ This seems like a bad idea.
-                    if (role == Role.TerminatorBottom) baseline -= forcedAspect;
-                    stack.Add(role, asset, baseline, forceStretch);
-                    baseline += forcedAspect;
+                    // Note that for a bottom cap, the aspect ratio extension is below the segment.
+                    var isBottom = role.TryAsCapPosition() is CapPosition.Bottom;
+                    if (isBottom) baseline += aspectExtension * fixedStretchFactor;
+                    stack.Add(role, asset, baseline, forceStretch * fixedStretchFactor);
+                    if (!isBottom) baseline += aspectExtension * fixedStretchFactor;
+                    baseline += asset.AspectRatio * forceStretch * fixedStretchFactor;
                     break;
                 case ProtoSegmentFixed(var role, var asset)
                 {
-                    ForcedAspectRatio: var forcedAspect, ForceStretch: var forceStretch
+                    AdjustedAspectRatio: var adjustedAspect, ForceStretch: var forceStretch
                 }:
                     stack.Add(role, asset, baseline, forceStretch * fixedStretchFactor);
-                    baseline += forcedAspect * fixedStretchFactor;
+                    baseline += adjustedAspect * fixedStretchFactor;
                     break;
                 case ProtoSegmentFlex { Solution: var bodySolution }:
                     stack.Add(bodySolution!, baseline);

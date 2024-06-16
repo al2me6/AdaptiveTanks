@@ -26,7 +26,7 @@ public static class SegmentStacker
         var skinProto = BuildProtoStack(diameter, height, skinSegments);
         var coreProto = BuildProtoStack(diameter, height, coreSegments);
 
-        ProtoSegmentStack.NegotiateStrictAlignment(skinProto, coreProto);
+        ProtoSegmentStack.NegotiateSegmentAlignment(skinProto, coreProto);
 
         skinProto.SolveFlexSegments();
         coreProto.SolveFlexSegments();
