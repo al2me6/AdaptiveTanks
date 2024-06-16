@@ -89,6 +89,10 @@ public partial class ModuleAdaptiveTankBase
     [UI_ChooseOption]
     public string coreMountVariant;
 
+    [KSPField(isPersistant = true, guiName = "Intertank Fraction", guiActiveEditor = true)]
+    [UI_FloatRange(minValue = 0f, maxValue = 1f, stepIncrement = 0.025f)]
+    public float intertankFraction = 0.5f;
+
     [KSPField(isPersistant = true)] public SegmentAlignment noseAlign;
     [KSPField(isPersistant = true)] public SegmentAlignment mountAlign;
 

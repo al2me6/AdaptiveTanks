@@ -1,35 +1,30 @@
 namespace AdaptiveTanks;
 
+#nullable enable
+
 public static class SegmentStacker
 {
-    private static ProtoSegmentStack BuildProtoStack(
-        float diameter, float height, SelectedSegments segments)
-    {
-        var protoStack = new ProtoSegmentStack(diameter, height);
-
-        protoStack.AddTerminator(segments, CapPosition.Bottom, segments.AlignBottom);
-        protoStack.TryAddFixed(segments, SegmentRole.TankCapInternalBottom);
-        // TODO intertank
-        protoStack.AddFlex(segments[SegmentRole.Tank]!, 1f);
-        protoStack.TryAddFixed(segments, SegmentRole.TankCapInternalTop);
-        protoStack.AddTerminator(segments, CapPosition.Top, segments.AlignTop);
-
-        return protoStack;
-    }
-
     public static SkinAndCore<SegmentStack> SolveStack(
         float diameter,
         float height,
         SelectedSegments skinSegments,
-        SelectedSegments coreSegments)
+        SelectedSegments coreSegments,
+        float[]? flexFactors)
     {
-        var skinProto = BuildProtoStack(diameter, height, skinSegments);
-        var coreProto = BuildProtoStack(diameter, height, coreSegments);
+        flexFactors = skinSegments.Intertank != null
+                      && coreSegments.Intertank != null
+                      && flexFactors != null
+            ? flexFactors
+            : [1f];
+        var skinProto = new ProtoSegmentStack(diameter, height, skinSegments, flexFactors);
+        var coreProto = new ProtoSegmentStack(diameter, height, coreSegments, flexFactors);
 
         ProtoSegmentStack.NegotiateSegmentAlignment(skinProto, coreProto);
 
-        skinProto.SolveFlexSegments();
-        coreProto.SolveFlexSegments();
+        skinProto.TrySolveFlexSegmentsWithIntertanks();
+        coreProto.TrySolveFlexSegmentsWithIntertanks();
+
+        ProtoSegmentStack.NegotiateIntertankAlignment(skinProto, coreProto);
 
         return new SkinAndCore<SegmentStack>(skinProto.Elaborate(), coreProto.Elaborate());
     }

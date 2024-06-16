@@ -59,6 +59,7 @@ public partial class ModuleAdaptiveTankBase
     {
         Fields[nameof(diameter)].AddSelfAndSymmetryListener(OnDimensionModified);
         Fields[nameof(height)].AddSelfAndSymmetryListener(OnDimensionModified);
+        Fields[nameof(intertankFraction)].AddSelfAndSymmetryListener(OnDimensionModified);
 
         Fields[nameof(diameter)].AsEditor<UI_FloatEdit>().SetIncrements(dimensionIncrementLarge,
             dimensionIncrementSmall, dimensionIncrementSlide);
@@ -117,7 +118,7 @@ public partial class ModuleAdaptiveTankBase
         tank: skinBodyVariant,
         terminatorTop: skinNoseVariant,
         terminatorBottom: skinMountVariant,
-        intertank: null,
+        intertank: SkinStyle.SegmentsByRole[Role.Intertank].First().name,
         tankCapInternalTop: TerminatorIsAccessory(Cap.Top) // TODO select
             ? SkinStyle.SegmentsByRole[Role.TankCapInternalTop].First().name
             : null,
@@ -131,7 +132,7 @@ public partial class ModuleAdaptiveTankBase
         tank: coreBodyVariant,
         terminatorTop: coreNoseVariant,
         terminatorBottom: coreMountVariant,
-        intertank: null,
+        intertank: CoreStyle.SegmentsByRole[Role.Intertank].First().name,
         tankCapInternalTop: TerminatorIsAccessory(Cap.Top) // TODO select
             ? CoreStyle.SegmentsByRole[Role.TankCapInternalTop].First().name
             : null,
@@ -208,6 +209,7 @@ public partial class ModuleAdaptiveTankBase
     protected void UpdateAvailableVariantImpl(Layer layer, Role role)
     {
         var field = Fields[SegmentFieldName(layer, role)];
+        // Debug.LogWarning($"^^layer {layer}, role {role}");
         var variants = Style(layer).SegmentsByRole[role];
         ref var selection = ref SegmentName(layer, role);
 
