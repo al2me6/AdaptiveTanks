@@ -113,6 +113,9 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad, ILibraryLoadM
 
     public void PostLoadModify(ref Dictionary<string, SegmentDef> items)
     {
+        // Note that linking must be done after the evaluation of the initial assignment.
+        // This is as good as a place as any.
+        CoreAccessorySurrogate.assets[0].Segment = CoreAccessorySurrogate;
         items.Add(CoreAccessorySurrogate.name, CoreAccessorySurrogate);
     }
 
