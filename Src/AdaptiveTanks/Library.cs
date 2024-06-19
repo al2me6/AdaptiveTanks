@@ -5,6 +5,8 @@ using System.Reflection;
 
 namespace AdaptiveTanks;
 
+#nullable enable
+
 /// <summary>
 /// Register the annotated class to be loaded by the <see cref="Library"/>.
 /// The class must implement <see cref="ILibraryLoad"/>.
@@ -22,12 +24,6 @@ public class LibraryLoadAttribute(string nodeName, int loadOrder = 0) : Attribut
 public interface ILibraryLoad : IConfigNode
 {
     public string ItemName();
-}
-
-public interface ILibraryLoadModify<TThis>
-{
-    // This should be static...
-    public void PostLoadModify(ref Dictionary<string, TThis> items);
 }
 
 public static class LibraryLoader
@@ -53,8 +49,16 @@ public static class LibraryLoader
 
 public static class Library<T> where T : class, ILibraryLoad, new()
 {
-    public static IReadOnlyDictionary<string, T> Items { get; private set; }
-    public static T Get(string name) => Items[name];
+    public static IReadOnlyDictionary<string, T> Items { get; private set; } = null!;
+
+    public static T Get(string name)
+    {
+        if (Items.TryGetValue(name, out var item)) return item;
+        throw new KeyNotFoundException($"Library<{typeof(T).Name}>: key `{name}` not found");
+    }
+
+    public static T? MaybeGet(string? name) => name != null ?  Get(name) : null;
+
     public static IEnumerable<T> GetAll(IEnumerable<string> names) => names.Select(n => Items[n]);
 
     public static void Load(string nodeName)
@@ -68,12 +72,7 @@ public static class Library<T> where T : class, ILibraryLoad, new()
             items[item.ItemName()] = item;
         }
 
-        if (new T() is ILibraryLoadModify<T> modifier)
-        {
-            modifier.PostLoadModify(ref items);
-        }
-
         Items = items;
-        Debug.Log($"LIBRARY: loaded {Items.Count} `{typeof(T).Name}`s", true);
+        Debug.Log($"Library<{typeof(T).Name}>: loaded {Items.Count} items", true);
     }
 }

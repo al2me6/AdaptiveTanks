@@ -24,10 +24,8 @@ internal abstract record ProtoSegment
     internal record Terminator(CapPosition Position, SegmentDef Segment, Alignment Align)
         : Fixed(Position.AsRoleTerminator(), Segment)
     {
-        internal float AspectRatioExtension { get; set; } = 0f;
-
-        internal override float AdjustedAspectRatio =>
-            base.AdjustedAspectRatio + AspectRatioExtension;
+        internal float Padding { get; set; } = 0f;
+        internal override float AdjustedAspectRatio => base.AdjustedAspectRatio + Padding;
     }
 
     internal record Flex(Asset[] Assets, float FlexFactor) : ProtoSegment
@@ -42,24 +40,26 @@ internal class ProtoSegmentStack
     private float Height { get; }
     private List<ProtoSegment> ProtoSegments { get; set; } = [];
 
-    public ProtoSegmentStack(
+    #region ctor
+
+    internal ProtoSegmentStack(
         float diameter, float height, SelectedSegments segments, float[] flexFactors)
     {
         Diameter = diameter;
         Height = height;
-        var flexAssets = segments.Tank.GetAssetsForDiameter(diameter).ToArray();
+        var flexAssets = segments.Tank.GetAllAssetsFor(diameter).ToArray();
 
         AddTerminator(segments, CapPosition.Bottom, segments.AlignBottom);
-        TryAddFixed(segments, Role.TankCapInternalBottom);
+        MaybeAddFixed(segments, Role.TankCapInternalBottom);
 
         var totalFlexFactor = flexFactors.Sum();
         for (var i = 0; i < flexFactors.Length; ++i)
         {
-            if (i > 0) ProtoSegments.Add(new Fixed(Role.Intertank, segments.Intertank!));
+            if (i > 0) AddFixed(segments, Role.Intertank);
             ProtoSegments.Add(new Flex(flexAssets, flexFactors[i] / totalFlexFactor));
         }
 
-        TryAddFixed(segments, Role.TankCapInternalTop);
+        MaybeAddFixed(segments, Role.TankCapInternalTop);
         AddTerminator(segments, CapPosition.Top, segments.AlignTop);
     }
 
@@ -69,24 +69,32 @@ internal class ProtoSegmentStack
     private void AddFixed(SelectedSegments segments, Role role) =>
         ProtoSegments.Add(new Fixed(role, segments[role]!));
 
-    private void TryAddFixed(SelectedSegments segments, Role role)
+    private void MaybeAddFixed(SelectedSegments segments, Role role)
     {
         if (segments[role] != null) AddFixed(segments, role);
     }
 
+    #endregion
+
+    #region queries
+
     private float TotalAspectRatio => Height / Diameter;
 
     private float CapAndAccessoryAspectRatio() => ProtoSegments
-        .WhereOfType<Fixed>()
+        .WhereIs<Fixed>()
         .Where(seg => seg.Role != Role.Intertank)
         .Select(seg => seg.AdjustedAspectRatio)
         .Sum();
 
     private float FueledAspectRatio() => TotalAspectRatio - ProtoSegments
-        .WhereOfType<Terminator>()
+        .WhereIs<Terminator>()
         .Where(seg => seg.Asset!.Segment.IsAccessory)
         .Select(seg => seg.AdjustedAspectRatio)
         .Sum();
+
+    #endregion
+
+    #region elaboration
 
     public static void NegotiateSegmentAlignment(ProtoSegmentStack skin, ProtoSegmentStack core)
     {
@@ -99,10 +107,11 @@ internal class ProtoSegmentStack
             if (skin.ProtoSegments[i] is not Fixed skinSeg ||
                 core.ProtoSegments[i] is not Fixed coreSeg) continue;
 
-            // Select fixed assets. The skin is negotiated based on the core asset.
-            coreSeg.Asset = coreSeg.Segment.GetFirstAssetForDiameter(core.Diameter);
+            // Select fixed assets. The skin is selected to best match the core.
+            // TODO: negotiate the skin and core together?
+            coreSeg.Asset = coreSeg.Segment.GetFirstAssetFor(core.Diameter);
             skinSeg.Asset =
-                skinSeg.Segment.GetAssetOfNearestRatio(skin.Diameter, coreSeg.Asset.AspectRatio);
+                skinSeg.Segment.GetBestAssetFor(skin.Diameter, coreSeg.Asset.AspectRatio);
 
             if (skinSeg is Terminator { Align: Alignment.PinInteriorEnd } skinSegTerm &&
                 coreSeg is Terminator { Align: Alignment.PinInteriorEnd } coreSegTerm)
@@ -113,9 +122,9 @@ internal class ProtoSegmentStack
                 var coreNativeAspect = coreSeg.Asset.AspectRatio;
                 var padding = Mathf.Abs(skinNativeAspect - coreNativeAspect);
                 if (skinNativeAspect < coreNativeAspect)
-                    skinSegTerm.AspectRatioExtension = padding;
+                    skinSegTerm.Padding = padding;
                 else
-                    coreSegTerm.AspectRatioExtension = padding;
+                    coreSegTerm.Padding = padding;
             }
             else if (skinSeg.Asset.Segment.useStrictAlignment)
             {
@@ -137,7 +146,8 @@ internal class ProtoSegmentStack
             var segPrev = (Fixed)ProtoSegments[i - 1];
             var segNext = (Fixed)ProtoSegments[i + 1];
 
-            // An intertank contains only half of this propellant.
+            // Only half of the intertank contains this propellant.
+            // TODO: compute contribution based on volumes.
             var fixedContribution =
                 segPrev.AdjustedAspectRatio * (segPrev.Role == Role.Intertank ? 0.5f : 1f)
                 + segNext.AdjustedAspectRatio * (segNext.Role == Role.Intertank ? 0.5f : 1f);
@@ -177,11 +187,10 @@ internal class ProtoSegmentStack
         ProtoSegments = newProtoSegments;
     }
 
-    public static void NegotiateIntertankAlignment(
-        ProtoSegmentStack skin, ProtoSegmentStack core)
+    public static void NegotiateIntertankAlignment(ProtoSegmentStack skin, ProtoSegmentStack core)
     {
-        var skinSolved = skin.ProtoSegments.WhereOfType<Flex>().All(seg => seg.Solution != null);
-        var coreSolved = core.ProtoSegments.WhereOfType<Flex>().All(seg => seg.Solution != null);
+        var skinSolved = skin.ProtoSegments.WhereIs<Flex>().All(seg => seg.Solution != null);
+        var coreSolved = core.ProtoSegments.WhereIs<Flex>().All(seg => seg.Solution != null);
 
         // TODO: relax if possible. Move stretching out of BodySolver.Solve here.
 
@@ -214,13 +223,13 @@ internal class ProtoSegmentStack
                 case Terminator
                 {
                     Position: var position, Role: var role, Asset: var asset,
-                    ForceStretch: var forceStretch, AspectRatioExtension: var aspectExtension
+                    ForceStretch: var forceStretch, Padding: var padding
                 }:
-                    // Note that for a bottom cap, the aspect ratio extension is below the segment.
+                    // Note that for a bottom cap, the padding is below the segment.
                     var isBottom = position == CapPosition.Bottom;
-                    if (isBottom) baseline += aspectExtension * fixedStretchFactor;
+                    if (isBottom) baseline += padding * fixedStretchFactor;
                     stack.Add(role, asset, baseline, forceStretch * fixedStretchFactor);
-                    if (!isBottom) baseline += aspectExtension * fixedStretchFactor;
+                    if (!isBottom) baseline += padding * fixedStretchFactor;
                     baseline += asset!.AspectRatio * forceStretch * fixedStretchFactor;
                     break;
                 case Fixed
@@ -240,4 +249,6 @@ internal class ProtoSegmentStack
 
         return stack;
     }
+
+    #endregion
 }

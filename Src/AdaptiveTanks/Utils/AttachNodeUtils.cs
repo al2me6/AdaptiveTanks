@@ -26,20 +26,19 @@ public static class AttachNodeUtils
 
         node.position = node.originalPosition = dest;
 
-        if (node.attachedPart == null) Debug.Log($"`{node.id}` is unused");
-        if (node.attachedPart == null) return;
+        var attachedPart = node.attachedPart;
+        if (attachedPart == null) return;
 
-        Debug.Log(
-            $"`{node.id}` attached to {node.attachedPart.name} {node.attachedPart.persistentId}");
+        Debug.Log($"`{node.id}` attached to {attachedPart.name}[{attachedPart.persistentId}]");
 
         var part = node.owner;
         var worldDelta = part.transform.TransformDirection(localDelta);
 
-        var attachedPartIsChild = node.attachedPart.parent == part;
+        var attachedPartIsChild = attachedPart.parent == part;
         // If the attached part is the child, move the child. Done.
         if (attachedPartIsChild)
         {
-            node.attachedPart.PushBy(worldDelta);
+            attachedPart.PushBy(worldDelta);
         }
         // Else, we are the child. We must push ourselves back relative to the root.
         else

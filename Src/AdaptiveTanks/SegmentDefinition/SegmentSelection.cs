@@ -25,9 +25,9 @@ public record SelectedSegments(
         Library<SegmentDef>.Get(tank),
         Library<SegmentDef>.Get(terminatorTop),
         Library<SegmentDef>.Get(terminatorBottom),
-        intertank != null ? Library<SegmentDef>.Get(intertank) : null,
-        tankCapInternalTop != null ? Library<SegmentDef>.Get(tankCapInternalTop) : null,
-        tankCapInternalBottom != null ? Library<SegmentDef>.Get(tankCapInternalBottom) : null,
+        Library<SegmentDef>.MaybeGet(intertank),
+        Library<SegmentDef>.MaybeGet(tankCapInternalTop),
+        Library<SegmentDef>.MaybeGet(tankCapInternalBottom),
         alignTop,
         alignBottom)
     {

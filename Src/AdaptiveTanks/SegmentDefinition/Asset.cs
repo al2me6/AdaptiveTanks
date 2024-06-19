@@ -16,11 +16,11 @@ public class Asset : ConfigNodePersistenceBase
     [Persistent] public string mu = "AdaptiveTanks/Assets/Empty";
     [Persistent] public float nativeDiameter = 1f;
     [Persistent] public float nativeHeight = 1f;
-    [Persistent] public float nativeBaseline = -0.5f;
+    [Persistent] public float nativeBaseline = 0f;
     [Persistent] public bool nativeOrientationIsDown = false;
 
     [Persistent] public Vector2 diameterRange = new(0f, float.PositiveInfinity);
-    [Persistent] public float maxHeightDistortion = 0.25f;
+    [Persistent] public float maxHeightDistortion = float.PositiveInfinity;
 
     public Texture[] textures = [];
 
@@ -28,12 +28,6 @@ public class Asset : ConfigNodePersistenceBase
     {
         base.Load(node);
         textures = node.LoadAllFromNodes<Texture>().ToArray();
-    }
-
-    public override void Save(ConfigNode node)
-    {
-        base.Save(node);
-        node.WriteAllToNodes(textures);
     }
 
     public SegmentDef Segment { get; set; }
