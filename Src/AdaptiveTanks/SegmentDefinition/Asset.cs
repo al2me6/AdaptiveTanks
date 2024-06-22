@@ -13,7 +13,7 @@ public class Texture : ConfigNodePersistenceBase
 
 public class Asset : ConfigNodePersistenceBase
 {
-    [Persistent] public string mu = "AdaptiveTanks/Assets/Empty";
+    [Persistent] public string mu = BuiltinItems.EmptyMuPath;
     [Persistent] public float nativeDiameter = 1f;
     [Persistent] public float nativeHeight = 1f;
     [Persistent] public float nativeBaseline = 0f;

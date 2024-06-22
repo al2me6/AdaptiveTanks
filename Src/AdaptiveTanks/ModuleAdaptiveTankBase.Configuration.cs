@@ -265,7 +265,7 @@ public partial class ModuleAdaptiveTankBase
             && TerminatorIsAccessory(role.TryAsCapPosition()!.Value))
         {
             field.guiActiveEditor = false;
-            selection = SegmentDef.EmptyAccessoryName;
+            selection = BuiltinItems.EmptyAccessorySegmentName;
         }
         else if (role == Role.Intertank && !useIntertank)
         {

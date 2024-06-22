@@ -49,14 +49,6 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
 
     #endregion
 
-    #region constants
-
-    // The following segments must be defined in configs:
-
-    public const string EmptyAccessoryName = "_AT_empty_accessory";
-
-    #endregion
-
     #region deserialization
 
     public override void Load(ConfigNode node)
