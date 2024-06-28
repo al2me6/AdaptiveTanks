@@ -23,11 +23,14 @@ public readonly record struct SegmentTransformation(
     }
 }
 
-public record SegmentStack(float Diameter, float Height)
+public record SegmentStack(float Diameter)
 {
     public List<SegmentPlacement> Placements { get; } = [];
 
-    public float HalfHeight => Height / 2f;
+    public float AspectRatio { get; internal set; }
+
+    public float Height => AspectRatio * Diameter;
+    public float HalfHeight => Height * 0.5f;
 
     public void Add(SegmentRole role, Asset asset, float baseline, float stretch)
     {
