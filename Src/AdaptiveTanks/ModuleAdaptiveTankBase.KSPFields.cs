@@ -103,6 +103,8 @@ public partial class ModuleAdaptiveTankBase
     [UI_Toggle(enabledText = "enabled", disabledText = "disabled")]
     public bool useIntertank;
 
+    [KSPField] public float maxIntertankVolumetricDeviation = 0.05f;
+
     [KSPField(isPersistant = true, guiName = "Intertank Fraction", guiActiveEditor = true)]
     [UI_FloatRange(minValue = 0f, maxValue = 1f, stepIncrement = 0.025f)]
     public float intertankFraction = 0.5f;

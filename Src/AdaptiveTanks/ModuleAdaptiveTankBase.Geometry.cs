@@ -71,7 +71,8 @@ public partial class ModuleAdaptiveTankBase
             height,
             SkinSegments(),
             CoreSegments(),
-            [intertankFraction, 1f - intertankFraction]);
+            [intertankFraction, 1f - intertankFraction],
+            maxIntertankVolumetricDeviation);
         RealizeGeometry();
         RecenterStack();
         UpdateAttachNodes();

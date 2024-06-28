@@ -9,7 +9,9 @@ public static class SegmentStacker
         float height,
         SelectedSegments skinSegments,
         SelectedSegments coreSegments,
-        float[]? volumeFractions)
+        float[]? volumeFractions,
+        float maxIntertankVolumetricDeviation
+    )
     {
         volumeFractions = skinSegments.Intertank != null
                           && coreSegments.Intertank != null
@@ -24,7 +26,8 @@ public static class SegmentStacker
         skinProto.ComputeFlexSegmentAspectRatios();
         coreProto.ComputeFlexSegmentAspectRatios();
 
-        ProtoSegmentStack.NegotiateFlexAspectRatios(skinProto, coreProto);
+        ProtoSegmentStack.NegotiateFlexAspectRatios(
+            skinProto, coreProto, maxIntertankVolumetricDeviation);
 
         skinProto.SolveFlexSegments();
         coreProto.SolveFlexSegments();

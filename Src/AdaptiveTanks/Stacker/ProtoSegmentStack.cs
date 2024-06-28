@@ -33,7 +33,7 @@ internal abstract record ProtoSegment
     /// - `Assets` are all from the same `SegmentDef`.
     internal record Flex(Asset[] Assets, float VolumeFraction) : ProtoSegment
     {
-        private const float Tolerance = 5e-3f;
+        internal const float Tolerance = 5e-3f;
 
         internal Flex? Prev { get; set; } = null;
         internal Flex? Next { get; set; } = null;
@@ -64,6 +64,7 @@ internal abstract record ProtoSegment
                 case (null, Flex next):
                     return next.ModifyAspect(-shift);
                 case (Flex prev, Flex next):
+                    // TODO: shift unevenly if necessary.
                     var prevValid = prev.ModifyAspect(shift * -0.5f);
                     var nextValid = next.ModifyAspect(shift * -0.5f);
                     return prevValid && nextValid;
@@ -139,6 +140,9 @@ internal class ProtoSegmentStack
 
     private float FueledAspectRatio() => TotalAspectRatio - AccessoryAspectRatio();
 
+    private float VolumetricFractionToAspectAsCylinder(float volumetricFraction) =>
+        volumetricFraction * FueledAspectRatio();
+
     private Flex? FindFirstFlex() => ProtoSegments.WhereIs<Flex>().FirstOrDefault();
 
     #endregion
@@ -204,8 +208,14 @@ internal class ProtoSegmentStack
         }
     }
 
-    public static void NegotiateFlexAspectRatios(ProtoSegmentStack skin, ProtoSegmentStack core)
+    public static void NegotiateFlexAspectRatios(
+        ProtoSegmentStack skin, ProtoSegmentStack core, float maxVolumetricDeviation)
     {
+        // TODO: evaluate more precisely.
+        var maxAspectDeviation = Mathf.Min(
+            skin.VolumetricFractionToAspectAsCylinder(maxVolumetricDeviation),
+            core.VolumetricFractionToAspectAsCylinder(maxVolumetricDeviation));
+
         var maxIdx = Math.Min(skin.ProtoSegments.Count, core.ProtoSegments.Count);
         for (var i = 0; i < maxIdx; ++i)
         {
@@ -218,63 +228,47 @@ internal class ProtoSegmentStack
             // If there is no target to shift, there must be no intertank.
             if (!hasPrev && !hasNext)
             {
-                ShiftFlexSegment(skinSeg, coreSeg);
+                ResizeFlexSegment(skinSeg, coreSeg, maxAspectDeviation);
                 return;
             }
 
-            if (!ShiftFlexSegment(skinSeg, coreSeg))
+            if (!ResizeFlexSegment(skinSeg, coreSeg, maxAspectDeviation))
             {
-                Debug.Log("shift failed, excising intertanks");
+                Debug.Log("resize failed, excising intertanks");
                 skin.ExciseIntertanks();
                 core.ExciseIntertanks();
-                ShiftFlexSegment(skin.FindFirstFlex()!, core.FindFirstFlex()!);
+                ResizeFlexSegment(skin.FindFirstFlex()!, core.FindFirstFlex()!, maxAspectDeviation);
                 return;
             }
         }
     }
 
-    private static bool ShiftFlexSegment(Flex skinSeg, Flex coreSeg)
+    private static bool ResizeFlexSegment(Flex skin, Flex core, float maxAspectRatioDeviation)
     {
-        var skinMinAspect = skinSeg.Segment.minimumTankAspectRatio;
-        var coreMinAspect = coreSeg.Segment.minimumTankAspectRatio;
+        var skinExcess = skin.AspectRatio - skin.Segment.minimumTankAspectRatio;
+        var coreExcess = core.AspectRatio - core.Segment.minimumTankAspectRatio;
+
+        var skinSufficient = skinExcess >= 0f;
+        var coreSufficient = coreExcess >= 0f;
 
         // Both segments are sufficiently large. Accept.
-        if (skinSeg.AspectRatio > skinMinAspect && coreSeg.AspectRatio > coreMinAspect)
-            return true;
+        if (skinSufficient && coreSufficient) return true;
 
-        // Else, a shift is required.
-        // Case 1: negative aspects expand to 0 aspect.
-        // Case 2: too-small positive aspects shrink to 0 aspect.
-        // For both, shift is negative of computed aspect. Else 0.
-        var skinShift = skinSeg.AspectRatio < skinMinAspect ? -skinSeg.AspectRatio : 0f;
-        var coreShift = coreSeg.AspectRatio < coreMinAspect ? -coreSeg.AspectRatio : 0f;
-        var shift = (skinShift, coreShift) switch
-        {
-            // expand, expand
-            // Expand maximally. In non-strictly aligned mode the shorter layer will have a
-            // force-filled gap.
-            (> 0, > 0) => Mathf.Max(skinShift, coreShift),
-            // contract, contract
-            // Contract minimally. In non-strictly aligned mode the taller layer will have a
-            // force-filled gap.
-            (< 0, < 0) => Mathf.Max(skinShift, coreShift),
-            // expand, contract
-            // contract, expand
-            // Expand such that both minimum constraints are satisfied.
-            (> 0, < 0) or (< 0, > 0) => Mathf.Max(
-                skinMinAspect - skinSeg.AspectRatio, coreMinAspect - coreSeg.AspectRatio),
-            // One shift is zero. Respect the other one and hope for the best.
-            // TODO: do better.
-            (_, 0) => skinShift,
-            (0, _) => coreShift,
-            _ => 0f
-        };
-        Debug.Log($"shifts: skin {skinShift:f3}, core {coreShift:f3}, unified {shift:f3}");
+        // Expand until both layers are satisfied.
+        var shift = Mathf.Max(-skinExcess, -coreExcess);
+        // Special case: if both layers have the same aspect, collapse the segment entirely
+        // when that gives a smaller shift.
+        // This will generally only occur when strict alignment (or alignInteriorEnd) is enabled
+        // on both ends. Attempting to negotiate collapse when the ends are staggered will only
+        // lead to pain and suffering.
+        if (MathUtils.ApproxEqAbsolute(skin.AspectRatio, core.AspectRatio, Flex.Tolerance))
+            shift = MathUtils.MinByMagnitude(shift, -skin.AspectRatio);
 
-        if (!skinSeg.ShiftAspect(shift)) return false;
-        if (!coreSeg.ShiftAspect(shift)) return false;
+        if (Mathf.Abs(shift) > maxAspectRatioDeviation) return false;
 
-        return true;
+        var skinSuccess = skin.ShiftAspect(shift);
+        var coreSuccess = core.ShiftAspect(shift);
+        return skinSuccess && coreSuccess;
     }
 
     private void ExciseIntertanks()
