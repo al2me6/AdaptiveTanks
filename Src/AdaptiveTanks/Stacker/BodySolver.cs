@@ -15,6 +15,8 @@ public record StretchedAsset
 
 public record BodySolution(List<StretchedAsset> Stack, float TargetAspectRatio)
 {
+    public static readonly BodySolution Empty = new([], 0f);
+
     public float SolutionAspectRatio() => Stack
         .Select(segment => segment.StretchedAspectRatio)
         .Sum();
@@ -77,57 +79,15 @@ public static class BodySolver
             else break;
         }
 
+        if (stack.Count == 0) stack.Add(new StretchedAsset { Asset = availableAssets[0] });
+
         // Sort largest to smallest.
         stack.Sort((a, b) => b.Asset.AspectRatio.CompareTo(a.Asset.AspectRatio));
 
         var solution = new BodySolution(stack, aspectRatio);
-        Stretch(ref solution);
+        var requiredStretch = solution.TargetAspectRatio / solution.SolutionAspectRatio();
+        foreach (var segment in solution.Stack) segment.Stretch = requiredStretch;
 
         return solution;
-    }
-
-    private static void Stretch(ref BodySolution solution)
-    {
-        var requiredStretch = solution.TargetAspectRatio / solution.SolutionAspectRatio();
-        foreach (var segment in solution.Stack)
-        {
-            segment.Stretch = requiredStretch;
-        }
-
-        // var isClamped = Enumerable.Repeat(false, solution.Stack.Count).ToList();
-        //
-        // for (var i = 0; i < solution.Stack.Count; ++i)
-        // {
-        //     // Note: distortion is the difference between the actual stretching factor and 1.
-        //     var tolerableDistortion = CoreSegmentSet.models[i].maxDistortion;
-        //     var requiredDistortion = stretches[i] - 1f;
-        //
-        //     if (Mathf.Abs(requiredDistortion) < tolerableDistortion) continue;
-        //
-        //     isClamped[i] = true;
-        //
-        //     var originalContribution = CoreSegmentHeights(i) * stretches[i];
-        //     stretches[i] = 1 + tolerableDistortion * Mathf.Sign(requiredDistortion);
-        //     var clampedContribution = CoreSegmentHeights(i) * stretches[i];
-        //     var totalAdjustment = clampedContribution - originalContribution;
-        //
-        //     var totalAdjustableHeight = 0f;
-        //     for (var j = 0; j < solution.Stack.Count; ++j)
-        //     {
-        //         if (isClamped[j]) continue;
-        //         totalAdjustableHeight += CoreSegmentHeights(j) * stretches[j];
-        //     }
-        //
-        //     for (var j = 0; j < solution.Stack.Count; ++j)
-        //     {
-        //         var otherContribution = CoreSegmentHeights(j) * stretches[j];
-        //         var otherContributionFraction = otherContribution / totalAdjustableHeight;
-        //         var adjustmentContribution = totalAdjustment * otherContributionFraction;
-        //         var adjustedContribution = otherContribution + adjustmentContribution;
-        //         stretches[j] = adjustedContribution / CoreSegmentHeights(j);
-        //     }
-        // }
-
-        // TODO: verify not every segment got clamped. If so, what do?
     }
 }

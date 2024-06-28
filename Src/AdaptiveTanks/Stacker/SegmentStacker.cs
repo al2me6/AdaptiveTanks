@@ -9,22 +9,25 @@ public static class SegmentStacker
         float height,
         SelectedSegments skinSegments,
         SelectedSegments coreSegments,
-        float[]? flexFactors)
+        float[]? volumeFractions)
     {
-        flexFactors = skinSegments.Intertank != null
-                      && coreSegments.Intertank != null
-                      && flexFactors != null
-            ? flexFactors
+        volumeFractions = skinSegments.Intertank != null
+                          && coreSegments.Intertank != null
+                          && volumeFractions != null
+            ? volumeFractions
             : [1f];
-        var skinProto = new ProtoSegmentStack(diameter, height, skinSegments, flexFactors);
-        var coreProto = new ProtoSegmentStack(diameter, height, coreSegments, flexFactors);
+        var skinProto = new ProtoSegmentStack(diameter, height, skinSegments, volumeFractions);
+        var coreProto = new ProtoSegmentStack(diameter, height, coreSegments, volumeFractions);
 
         ProtoSegmentStack.NegotiateSegmentAlignment(skinProto, coreProto);
 
-        skinProto.TrySolveFlexSegmentsWithIntertanks();
-        coreProto.TrySolveFlexSegmentsWithIntertanks();
+        skinProto.ComputeFlexSegmentAspectRatios();
+        coreProto.ComputeFlexSegmentAspectRatios();
 
-        ProtoSegmentStack.NegotiateIntertankAlignment(skinProto, coreProto);
+        ProtoSegmentStack.NegotiateFlexAspectRatios(skinProto, coreProto);
+
+        skinProto.SolveFlexSegments();
+        coreProto.SolveFlexSegments();
 
         return new SkinAndCore<SegmentStack>(skinProto.Elaborate(), coreProto.Elaborate());
     }

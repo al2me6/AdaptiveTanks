@@ -65,7 +65,7 @@
         <Compile Include="SegmentDefinition\SegmentClassification.cs"/>
         <Compile Include="SegmentDefinition\SegmentDef.cs"/>
         <Compile Include="SegmentDefinition\SegmentSelection.cs"/>
-        <Compile Include="SegmentDefinition\BuiltinItems.cs" />
+        <Compile Include="SegmentDefinition\BuiltinItems.cs"/>
         <Compile Include="Stacker\BodySolver.cs"/>
         <Compile Include="Stacker\ProtoSegmentStack.cs"/>
         <Compile Include="Stacker\SegmentStack.cs"/>

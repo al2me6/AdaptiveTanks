@@ -20,7 +20,6 @@ public class Asset : ConfigNodePersistenceBase
     [Persistent] public bool nativeOrientationIsDown = false;
 
     [Persistent] public Vector2 diameterRange = new(0f, float.PositiveInfinity);
-    [Persistent] public float maxHeightDistortion = float.PositiveInfinity;
 
     public Texture[] textures = [];
 

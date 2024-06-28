@@ -39,11 +39,15 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
 
     [Persistent] public string name;
     [Persistent] protected string displayName;
+
     [Persistent] public SegmentRoleCfg role = SegmentRoleCfg.tank;
     [Persistent] public CapPositionCfg capPosition = CapPositionCfg.either;
+
     [Persistent] public SegmentAlignmentCfg align = SegmentAlignmentCfg.pinBothEnds;
     [Persistent] public bool useStrictAlignment = false;
     [Persistent] public float strictAlignmentBias = 0.5f;
+
+    [Persistent] public float minimumTankAspectRatio = 0.1f;
 
     public Asset[] assets;
 
@@ -85,6 +89,11 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
         {
             Debug.LogWarning($"segment `{name}` contained no assets; adding default");
             assets = [new Asset()];
+        }
+
+        if (minimumTankAspectRatio <= 0f)
+        {
+            minimumTankAspectRatio = assets.Select(asset => asset.AspectRatio).Min() * 0.5f;
         }
 
         foreach (var asset in assets) asset.Segment = this;

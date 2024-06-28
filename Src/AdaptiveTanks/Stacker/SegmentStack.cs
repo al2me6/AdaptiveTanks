@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using UnityEngine;
 
 namespace AdaptiveTanks;
@@ -84,6 +86,18 @@ public record SegmentStack(float Diameter, float Height)
         }
 
         return worstDelta;
+    }
+
+    public string DebugPrint()
+    {
+        var sb = new StringBuilder();
+        foreach (var (segmentRole, asset, baseline, _) in Placements)
+        {
+            sb.AppendFormat("{0:f} [{1}]: {2}\n",
+                baseline, segmentRole, asset.mu.Split('/').Last());
+        }
+
+        return sb.ToString();
     }
 }
 

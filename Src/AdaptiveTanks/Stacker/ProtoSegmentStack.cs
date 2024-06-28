@@ -28,9 +28,47 @@ internal abstract record ProtoSegment
         internal override float AdjustedAspectRatio => base.AdjustedAspectRatio + Padding;
     }
 
-    internal record Flex(Asset[] Assets, float FlexFactor) : ProtoSegment
+    /// Assumptions:
+    /// - There is at least one `Asset`.
+    /// - `Assets` are all from the same `SegmentDef`.
+    internal record Flex(Asset[] Assets, float VolumeFraction) : ProtoSegment
     {
+        private const float Tolerance = 5e-3f;
+
+        internal Flex? Prev { get; set; } = null;
+        internal Flex? Next { get; set; } = null;
+        internal float AspectRatio { get; set; } = 0f;
         internal BodySolution? Solution { get; set; } = null;
+        internal SegmentDef Segment => Assets[0].Segment;
+
+        internal bool AspectRatioIsEmpty => Mathf.Abs(AspectRatio - 0f) < Tolerance;
+
+        internal bool AspectRatioIsValid =>
+            AspectRatioIsEmpty || Segment.minimumTankAspectRatio < AspectRatio + Tolerance;
+
+        private bool ModifyAspect(float shift)
+        {
+            AspectRatio += shift;
+            return AspectRatioIsValid;
+        }
+
+        internal bool ShiftAspect(float shift)
+        {
+            if (!ModifyAspect(shift)) return false;
+            switch (Prev, Next)
+            {
+                case (null, null):
+                    return true;
+                case (Flex prev, null):
+                    return prev.ModifyAspect(-shift);
+                case (null, Flex next):
+                    return next.ModifyAspect(-shift);
+                case (Flex prev, Flex next):
+                    var prevValid = prev.ModifyAspect(shift * -0.5f);
+                    var nextValid = next.ModifyAspect(shift * -0.5f);
+                    return prevValid && nextValid;
+            }
+        }
     }
 }
 
@@ -43,7 +81,7 @@ internal class ProtoSegmentStack
     #region ctor
 
     internal ProtoSegmentStack(
-        float diameter, float height, SelectedSegments segments, float[] flexFactors)
+        float diameter, float height, SelectedSegments segments, float[] volumeFractions)
     {
         Diameter = diameter;
         Height = height;
@@ -52,11 +90,18 @@ internal class ProtoSegmentStack
         AddTerminator(segments, CapPosition.Bottom, segments.AlignBottom);
         MaybeAddFixed(segments, Role.TankCapInternalBottom);
 
-        var totalFlexFactor = flexFactors.Sum();
-        for (var i = 0; i < flexFactors.Length; ++i)
+        var totalVolumeFraction = volumeFractions.Sum();
+        Flex? previousFlex = null;
+        for (var i = 0; i < volumeFractions.Length; ++i)
         {
             if (i > 0) AddFixed(segments, Role.Intertank);
-            ProtoSegments.Add(new Flex(flexAssets, flexFactors[i] / totalFlexFactor));
+            var segFlex = new Flex(flexAssets, volumeFractions[i] / totalVolumeFraction)
+            {
+                Prev = previousFlex
+            };
+            if (previousFlex != null) previousFlex.Next = segFlex;
+            ProtoSegments.Add(segFlex);
+            previousFlex = segFlex;
         }
 
         MaybeAddFixed(segments, Role.TankCapInternalTop);
@@ -86,11 +131,15 @@ internal class ProtoSegmentStack
         .Select(seg => seg.AdjustedAspectRatio)
         .Sum();
 
-    private float FueledAspectRatio() => TotalAspectRatio - ProtoSegments
+    private float AccessoryAspectRatio() => ProtoSegments
         .WhereIs<Terminator>()
         .Where(seg => seg.Asset!.Segment.IsAccessory)
         .Select(seg => seg.AdjustedAspectRatio)
         .Sum();
+
+    private float FueledAspectRatio() => TotalAspectRatio - AccessoryAspectRatio();
+
+    private Flex? FindFirstFlex() => ProtoSegments.WhereIs<Flex>().FirstOrDefault();
 
     #endregion
 
@@ -134,11 +183,11 @@ internal class ProtoSegmentStack
         }
     }
 
-    public void TrySolveFlexSegmentsWithIntertanks()
+    public void ComputeFlexSegmentAspectRatios()
     {
         for (var i = 1; i < ProtoSegments.Count - 1; ++i)
         {
-            if (ProtoSegments[i] is not Flex segFlex) continue;
+            if (ProtoSegments[i] is not Flex seg) continue;
 
             // Contract: tanks always have caps. Thus, the neighboring segments must be fixed
             // and in particular must be either intertanks or tank caps. Never an accessory
@@ -151,16 +200,81 @@ internal class ProtoSegmentStack
             var fixedContribution =
                 segPrev.AdjustedAspectRatio * (segPrev.Role == Role.Intertank ? 0.5f : 1f)
                 + segNext.AdjustedAspectRatio * (segNext.Role == Role.Intertank ? 0.5f : 1f);
-            var flexContribution = FueledAspectRatio() * segFlex.FlexFactor - fixedContribution;
-            if (flexContribution <= 0) break;
-
-            // TODO: deal with zero-height solutions more properly.
-            // This is a reasonable use-case. (e.g. Shuttle ET.)
-            var flexSolution = BodySolver.Solve(segFlex.Assets, flexContribution);
-            if (flexSolution.SolutionAspectRatio() == 0f) break;
-
-            segFlex.Solution = flexSolution;
+            seg.AspectRatio = FueledAspectRatio() * seg.VolumeFraction - fixedContribution;
         }
+    }
+
+    public static void NegotiateFlexAspectRatios(ProtoSegmentStack skin, ProtoSegmentStack core)
+    {
+        var maxIdx = Math.Min(skin.ProtoSegments.Count, core.ProtoSegments.Count);
+        for (var i = 0; i < maxIdx; ++i)
+        {
+            if (skin.ProtoSegments[i] is not Flex skinSeg ||
+                core.ProtoSegments[i] is not Flex coreSeg) continue;
+
+            var hasPrev = skinSeg.Prev != null && coreSeg.Prev != null;
+            var hasNext = skinSeg.Next != null && coreSeg.Next != null;
+
+            // If there is no target to shift, there must be no intertank.
+            if (!hasPrev && !hasNext)
+            {
+                ShiftFlexSegment(skinSeg, coreSeg);
+                return;
+            }
+
+            if (!ShiftFlexSegment(skinSeg, coreSeg))
+            {
+                Debug.Log("shift failed, excising intertanks");
+                skin.ExciseIntertanks();
+                core.ExciseIntertanks();
+                ShiftFlexSegment(skin.FindFirstFlex()!, core.FindFirstFlex()!);
+                return;
+            }
+        }
+    }
+
+    private static bool ShiftFlexSegment(Flex skinSeg, Flex coreSeg)
+    {
+        var skinMinAspect = skinSeg.Segment.minimumTankAspectRatio;
+        var coreMinAspect = coreSeg.Segment.minimumTankAspectRatio;
+
+        // Both segments are sufficiently large. Accept.
+        if (skinSeg.AspectRatio > skinMinAspect && coreSeg.AspectRatio > coreMinAspect)
+            return true;
+
+        // Else, a shift is required.
+        // Case 1: negative aspects expand to 0 aspect.
+        // Case 2: too-small positive aspects shrink to 0 aspect.
+        // For both, shift is negative of computed aspect. Else 0.
+        var skinShift = skinSeg.AspectRatio < skinMinAspect ? -skinSeg.AspectRatio : 0f;
+        var coreShift = coreSeg.AspectRatio < coreMinAspect ? -coreSeg.AspectRatio : 0f;
+        var shift = (skinShift, coreShift) switch
+        {
+            // expand, expand
+            // Expand maximally. In non-strictly aligned mode the shorter layer will have a
+            // force-filled gap.
+            (> 0, > 0) => Mathf.Max(skinShift, coreShift),
+            // contract, contract
+            // Contract minimally. In non-strictly aligned mode the taller layer will have a
+            // force-filled gap.
+            (< 0, < 0) => Mathf.Max(skinShift, coreShift),
+            // expand, contract
+            // contract, expand
+            // Expand such that both minimum constraints are satisfied.
+            (> 0, < 0) or (< 0, > 0) => Mathf.Max(
+                skinMinAspect - skinSeg.AspectRatio, coreMinAspect - coreSeg.AspectRatio),
+            // One shift is zero. Respect the other one and hope for the best.
+            // TODO: do better.
+            (_, 0) => skinShift,
+            (0, _) => coreShift,
+            _ => 0f
+        };
+        Debug.Log($"shifts: skin {skinShift:f3}, core {coreShift:f3}, unified {shift:f3}");
+
+        if (!skinSeg.ShiftAspect(shift)) return false;
+        if (!coreSeg.ShiftAspect(shift)) return false;
+
+        return true;
     }
 
     private void ExciseIntertanks()
@@ -175,11 +289,7 @@ internal class ProtoSegmentStack
                 if (foundFirstFlex) continue;
                 foundFirstFlex = true;
                 var newFlexAspect = TotalAspectRatio - CapAndAccessoryAspectRatio();
-                var replacementFlex = new Flex(segFlex.Assets, 1f)
-                {
-                    Solution = BodySolver.Solve(segFlex.Assets, newFlexAspect)
-                };
-                newProtoSegments.Add(replacementFlex);
+                newProtoSegments.Add(new Flex(segFlex.Assets, 1f) { AspectRatio = newFlexAspect });
             }
             else if (seg is not Fixed(Role.Intertank, _)) newProtoSegments.Add(seg);
         }
@@ -187,32 +297,19 @@ internal class ProtoSegmentStack
         ProtoSegments = newProtoSegments;
     }
 
-    public static void NegotiateIntertankAlignment(ProtoSegmentStack skin, ProtoSegmentStack core)
+    public void SolveFlexSegments()
     {
-        var skinSolved = skin.ProtoSegments.WhereIs<Flex>().All(seg => seg.Solution != null);
-        var coreSolved = core.ProtoSegments.WhereIs<Flex>().All(seg => seg.Solution != null);
-
-        // TODO: relax if possible. Move stretching out of BodySolver.Solve here.
-
-        if (!skinSolved || !coreSolved)
+        foreach (var seg in ProtoSegments)
         {
-            skin.ExciseIntertanks();
-            core.ExciseIntertanks();
+            if (seg is not Flex segFlex) continue;
+            segFlex.Solution = segFlex.AspectRatioIsEmpty
+                ? BodySolution.Empty
+                : BodySolver.Solve(segFlex.Assets, segFlex.AspectRatio);
         }
     }
 
     public SegmentStack Elaborate()
     {
-        // TODO: respect maxStretch
-        // TODO: this needs to be negotiated
-        // var solvedFlexAspect = ProtoSegments
-        //     .WhereOfType<ProtoSegmentFlex>()
-        //     .Select(seg => seg.Solution!.SolutionAspectRatio())
-        //     .Sum();
-        // var adjustedFixedAspect = TotalAspectRatio - solvedFlexAspect;
-        // var fixedStretchFactor = FixedAspectRatio() / adjustedFixedAspect;
-        var fixedStretchFactor = 1f;
-
         var stack = new SegmentStack(Diameter, Height);
         var baseline = 0f;
 
@@ -227,18 +324,18 @@ internal class ProtoSegmentStack
                 }:
                     // Note that for a bottom cap, the padding is below the segment.
                     var isBottom = position == CapPosition.Bottom;
-                    if (isBottom) baseline += padding * fixedStretchFactor;
-                    stack.Add(role, asset, baseline, forceStretch * fixedStretchFactor);
-                    if (!isBottom) baseline += padding * fixedStretchFactor;
-                    baseline += asset!.AspectRatio * forceStretch * fixedStretchFactor;
+                    if (isBottom) baseline += padding;
+                    stack.Add(role, asset, baseline, forceStretch);
+                    if (!isBottom) baseline += padding;
+                    baseline += asset!.AspectRatio * forceStretch;
                     break;
                 case Fixed
                 {
                     Role: var role, Asset: var asset,
                     AdjustedAspectRatio: var adjustedAspect, ForceStretch: var forceStretch
                 }:
-                    stack.Add(role, asset, baseline, forceStretch * fixedStretchFactor);
-                    baseline += adjustedAspect * fixedStretchFactor;
+                    stack.Add(role, asset, baseline, forceStretch);
+                    baseline += adjustedAspect;
                     break;
                 case Flex { Solution: var bodySolution }:
                     stack.Add(bodySolution!, baseline);

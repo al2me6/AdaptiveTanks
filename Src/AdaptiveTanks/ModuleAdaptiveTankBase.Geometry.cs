@@ -20,12 +20,15 @@ public partial class ModuleAdaptiveTankBase
 
     protected SkinAndCore<SegmentStack> currentStacks;
 
-    protected void RealizeGeometry(SegmentStack current, string anchorName)
+    protected void RealizeGeometry(SegmentStack newStack, string anchorName)
     {
         // TODO: adjust existing stack instead of spawning new stack.
         var anchor = part.GetOrCreateAnchor(anchorName);
         anchor.ClearChildren();
-        foreach (var (mu, transformation) in current.IterSegments())
+
+        Debug.Log($"{anchorName} solution:\n{newStack.DebugPrint()}");
+
+        foreach (var (mu, transformation) in newStack.IterSegments())
         {
             var segmentMesh = GameDatabase.Instance.GetModel(mu);
             if (segmentMesh == null)
@@ -56,6 +59,8 @@ public partial class ModuleAdaptiveTankBase
         part.GetOrCreateAnchor(SkinStackAnchorName).localPosition =
             part.GetOrCreateAnchor(CoreStackAnchorName).localPosition =
                 Vector3.down * currentStacks.HalfHeight();
+        part.GetOrCreateAnchor(SkinStackAnchorName).localPosition +=
+            Vector3.forward * diameter * 1.5f;
     }
 
     public void ReStack()
