@@ -264,11 +264,11 @@ internal class ProtoSegmentStack
         if (MathUtils.ApproxEqAbsolute(skin.AspectRatio, core.AspectRatio, Flex.Tolerance))
             shift = MathUtils.MinByMagnitude(shift, -skin.AspectRatio);
 
-        if (Mathf.Abs(shift) > maxAspectRatioDeviation) return false;
-
+        // Note that a shift is always applied such that
         var skinSuccess = skin.ShiftAspect(shift);
         var coreSuccess = core.ShiftAspect(shift);
-        return skinSuccess && coreSuccess;
+
+        return Mathf.Abs(shift) > maxAspectRatioDeviation && skinSuccess && coreSuccess;
     }
 
     private void ExciseIntertanks()
@@ -296,6 +296,8 @@ internal class ProtoSegmentStack
         foreach (var seg in ProtoSegments)
         {
             if (seg is not Flex segFlex) continue;
+            if (!segFlex.AspectRatioIsValid)
+                Debug.LogError($"tried to solve invalid aspect ratio {segFlex.AspectRatio}");
             segFlex.Solution = segFlex.AspectRatioIsEmpty
                 ? BodySolution.Empty
                 : BodySolver.Solve(segFlex.Assets, segFlex.AspectRatio);
