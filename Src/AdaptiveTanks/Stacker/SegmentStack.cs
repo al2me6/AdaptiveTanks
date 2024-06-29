@@ -11,14 +11,12 @@ public readonly record struct SegmentPlacement(
     float Stretch
 );
 
-public readonly record struct SegmentTransformation(
-    Vector3 RenormalizedScaling,
-    Vector3 RenormalizedOffset)
+public readonly record struct SegmentTransformation(Vector3 Scale, Vector3 Offset)
 {
     public void ApplyTo(GameObject go)
     {
-        go.transform.localScale = RenormalizedScaling;
-        go.transform.localPosition = RenormalizedOffset;
+        go.transform.localScale = Scale;
+        go.transform.localPosition = Offset;
     }
 }
 
@@ -65,14 +63,13 @@ public record SegmentStack(float Diameter)
                 or (SegmentRole.TankCapInternalTop, true)
                 or (SegmentRole.TankCapInternalBottom, false);
 
-            var flipMultiplier = shouldFlip ? -1 : 1;
+            var flipMultiplier = shouldFlip ? -1f : 1f;
 
             var scale = new Vector3(1f, stretch * flipMultiplier, 1f) * effectiveDiameter;
 
             var flippedNativeBaseline = shouldFlip ? -nativeTop : nativeBaseline;
             var normalizedNativeBaseline = flippedNativeBaseline / asset.nativeDiameter;
-            var offset =
-                new Vector3(0f, (baseline - normalizedNativeBaseline * stretch) * Diameter, 0f);
+            var offset = Vector3.up * (baseline - normalizedNativeBaseline * stretch) * Diameter;
 
             yield return (asset.mu, new SegmentTransformation(scale, offset));
         }
