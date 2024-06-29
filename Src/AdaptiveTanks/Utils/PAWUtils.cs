@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace AdaptiveTanks.Extensions;
+namespace AdaptiveTanks.Utils;
 
-public static class PAWExtensions
+public static class PAWUtils
 {
     public static void AddSelfAndSymmetryListener(this BaseField field,
         Callback<BaseField, object> action)

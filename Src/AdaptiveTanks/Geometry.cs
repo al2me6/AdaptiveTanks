@@ -1,4 +1,4 @@
-﻿using AdaptiveTanks.Extensions;
+﻿using AdaptiveTanks.Utils;
 using UnityEngine;
 
 namespace AdaptiveTanks;

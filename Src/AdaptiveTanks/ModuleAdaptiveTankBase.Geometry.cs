@@ -1,5 +1,5 @@
 ﻿using System;
-using AdaptiveTanks.Extensions;
+using AdaptiveTanks.Utils;
 using KSP.UI;
 using UnityEngine;
 

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-namespace AdaptiveTanks.Extensions;
+namespace AdaptiveTanks.Utils;
 
 public static class AttachNodeUtils
 {

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace AdaptiveTanks.Extensions;
+namespace AdaptiveTanks.Utils;
 
 public static class ConfigNodeUtils
 {

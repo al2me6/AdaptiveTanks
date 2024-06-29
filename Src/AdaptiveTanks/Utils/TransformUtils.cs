@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace AdaptiveTanks.Extensions;
+namespace AdaptiveTanks.Utils;
 
 public static class TransformUtils
 {
