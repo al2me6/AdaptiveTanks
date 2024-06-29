@@ -42,7 +42,6 @@ public class Asset : ConfigNodePersistenceBase
     public static (float stretchA, float stretchB) NegotiateAspectRatio(
         Asset a, Asset b, float biasA)
     {
-        // TODO: respect stretch limits.
         var targetAspect = a.AspectRatio * biasA + b.AspectRatio * (1f - biasA);
         return (targetAspect / a.AspectRatio, targetAspect / b.AspectRatio);
     }
