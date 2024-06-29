@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
 using AdaptiveTanks.Utils;
-using KSP.UI;
 using UnityEngine;
 
 namespace AdaptiveTanks;
@@ -20,21 +20,29 @@ public partial class ModuleAdaptiveTankBase
 
     protected SkinAndCore<SegmentStack> currentStacks;
 
-    protected void RealizeGeometry(SegmentStack newStack, string anchorName)
+    private static readonly Dictionary<string, List<GameObject>> segmentMeshCache = new();
+
+    protected bool RealizeGeometry(SegmentStack newStack, string anchorName)
     {
-        // TODO: adjust existing stack instead of spawning new stack.
         var anchor = part.GetOrCreateAnchor(anchorName);
-        anchor.ClearChildren();
+
+        foreach (Transform segmentMesh in anchor)
+        {
+            segmentMeshCache.GetOrCreateValue(segmentMesh.name).Add(segmentMesh.gameObject);
+        }
+
+        var createdNewGO = false;
 
         Debug.Log($"{anchorName} solution:\n{newStack.DebugPrint()}");
 
-        foreach (var (mu, transformation) in newStack.IterSegments())
+        foreach (var (muPath, transformation) in newStack.IterSegments())
         {
-            var segmentMesh = GameDatabase.Instance.GetModel(mu);
-            if (segmentMesh == null)
+            if (!segmentMeshCache.GetOrCreateValue(muPath).TryPop(out var segmentMesh))
             {
-                Debug.LogError($"model {mu} was not found");
-                continue;
+                segmentMesh = GameDatabase.Instance.GetModel(muPath);
+                segmentMesh.name = muPath;
+                createdNewGO = true;
+                Debug.Log($"instantiated new GO {muPath}");
             }
 
             segmentMesh.SetActive(true);
@@ -42,14 +50,25 @@ public partial class ModuleAdaptiveTankBase
             segmentMesh.transform.SetLayerRecursive(part.gameObject.layer);
             transformation.ApplyTo(segmentMesh);
         }
+
+        foreach (var entry in segmentMeshCache)
+        {
+            while (entry.Value.TryPop(out var segmentMesh))
+            {
+                Debug.Log($"destroyed GO instance {entry.Key}");
+                Destroy(segmentMesh);
+            }
+        }
+
+        return createdNewGO;
     }
 
     protected void RealizeGeometry()
     {
-        RealizeGeometry(currentStacks.Skin, SkinStackAnchorName);
-        RealizeGeometry(currentStacks.Core, CoreStackAnchorName);
+        var generatedMesh = RealizeGeometry(currentStacks.Skin, SkinStackAnchorName);
+        generatedMesh |= RealizeGeometry(currentStacks.Core, CoreStackAnchorName);
 
-        part.ResetAllRendererCaches();
+        if (generatedMesh) part.ResetAllRendererCaches();
 
         var skinDistortion = currentStacks.Skin.WorstDistortion();
         var coreDistortion = currentStacks.Core.WorstDistortion();

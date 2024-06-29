@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using UnityEngine;
 
@@ -46,7 +45,7 @@ public record SegmentStack(float Diameter)
         }
     }
 
-    public IEnumerable<(string mu, SegmentTransformation transformation)> IterSegments()
+    public IEnumerable<(string muPath, SegmentTransformation transformation)> IterSegments()
     {
         foreach (var (segmentRole, asset, baseline, stretch) in Placements)
         {
