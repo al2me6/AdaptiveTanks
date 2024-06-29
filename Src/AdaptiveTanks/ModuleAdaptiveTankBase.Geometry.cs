@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using AdaptiveTanks.Utils;
+using ProceduralTools;
 using UnityEngine;
 
 namespace AdaptiveTanks;
@@ -95,6 +96,7 @@ public partial class ModuleAdaptiveTankBase
             CoreSegments(),
             [intertankFraction, 1f - intertankFraction],
             maxIntertankVolumetricDeviation);
+
         var solutionHeight = currentStacks.Height();
         if (!Mathf.Approximately(height, solutionHeight))
         {
@@ -107,6 +109,9 @@ public partial class ModuleAdaptiveTankBase
         RecenterStack();
         UpdateAttachNodes();
         MoveSurfaceAttachedChildren(oldDiameter);
+
+        if (HighLogic.LoadedSceneIsEditor || HighLogic.LoadedSceneIsFlight)
+            DragCubeTool.UpdateDragCubes(part);
     }
 
     #endregion
