@@ -59,8 +59,9 @@ public partial class ModuleAdaptiveTankBase
         part.GetOrCreateAnchor(SkinStackAnchorName).localPosition =
             part.GetOrCreateAnchor(CoreStackAnchorName).localPosition =
                 Vector3.down * currentStacks.Height() * 0.5f;
-        part.GetOrCreateAnchor(SkinStackAnchorName).localPosition +=
-            Vector3.forward * diameter * 1.5f;
+        // TODO: skin transparency somehow?
+        // part.GetOrCreateAnchor(SkinStackAnchorName).localPosition +=
+        //     Vector3.forward * diameter * 1.5f;
     }
 
     public void ReStack()
@@ -73,6 +74,14 @@ public partial class ModuleAdaptiveTankBase
             CoreSegments(),
             [intertankFraction, 1f - intertankFraction],
             maxIntertankVolumetricDeviation);
+        var solutionHeight = currentStacks.Height();
+        if (!Mathf.Approximately(height, solutionHeight))
+        {
+            Debug.LogError($"solution height ({solutionHeight}) differs from target ({height})");
+            height = solutionHeight;
+            MonoUtilities.RefreshPartContextWindow(part);
+        }
+
         RealizeGeometry();
         RecenterStack();
         UpdateAttachNodes();
