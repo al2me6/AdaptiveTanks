@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
 using AdaptiveTanks.Extensions;
+using AdaptiveTanks.Utils;
+using UnityEngine;
 
 namespace AdaptiveTanks;
 
@@ -19,11 +21,14 @@ public partial class ModuleAdaptiveTankBase
         if (string.IsNullOrEmpty(coreStyle) || !coreStyles.Contains(coreStyle))
             coreStyle = coreStyles[0];
 
-        UpdateDimensionLimits();
+        // Requires: valid styles.
         UpdateIntertankAvailability();
+        // Requires: valid intertank availability.
         UpdateAvailableVariants(Layer.Skin);
         UpdateAvailableVariants(Layer.Core);
+        // Requires: valid segment selection.
         UpdateAvailableAlignments();
+        UpdateDimensionLimits();
     }
 
     protected void InitializeEditorPAW()
@@ -230,13 +235,6 @@ public partial class ModuleAdaptiveTankBase
 
     #region constraints
 
-    protected void UpdateDimensionLimits()
-    {
-        // TODO calculate
-        Fields[nameof(diameter)].AsEditor<UI_FloatEdit>().SetMinMax(0.5f, 5f);
-        Fields[nameof(height)].AsEditor<UI_FloatEdit>().SetMinMax(0.5f, 10f);
-    }
-
     public void UpdateIntertankAvailability()
     {
         var field = Fields[nameof(useIntertank)];
@@ -311,6 +309,26 @@ public partial class ModuleAdaptiveTankBase
                     coreTerminator.TryGetOnlyAlignment()!.Value.IsInteriorEnd();
                 break;
         }
+    }
+
+    protected void UpdateDimensionLimits()
+    {
+        var minDiameterClamped = minDiameter;
+        var maxDiameterClamped = maxDiameter;
+
+        Fields[nameof(diameter)].AsEditor<UI_FloatEdit>()
+            .SetMinMax(minDiameterClamped, maxDiameterClamped);
+        diameter.Clamp(minDiameterClamped, maxDiameterClamped);
+
+        var minStackHeight = SegmentStacker.MinHeight(diameter, SkinSegments(), CoreSegments());
+        var minHeightClamped =
+            MathUtils.RoundUpTo(Mathf.Max(minHeight, minStackHeight), dimensionIncrementSmall);
+
+        Fields[nameof(height)].AsEditor<UI_FloatEdit>()
+            .SetMinMax(minHeightClamped, maxHeight);
+        height.Clamp(minDiameterClamped, maxDiameterClamped);
+
+        MonoUtilities.RefreshPartContextWindow(part);
     }
 
     #endregion

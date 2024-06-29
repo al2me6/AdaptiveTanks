@@ -57,6 +57,11 @@ public partial class ModuleAdaptiveTankBase
     [KSPField(guiName = "Worst distortion", guiActiveEditor = true)] [UI_Label]
     public string sWorstDistortion = "";
 
+    [KSPField] public float minDiameter = 0.5f;
+    [KSPField] public float maxDiameter = 10f;
+    [KSPField] public float minHeight = 0.5f;
+    [KSPField] public float maxHeight = 50f;
+
     #endregion
 
     #region styling

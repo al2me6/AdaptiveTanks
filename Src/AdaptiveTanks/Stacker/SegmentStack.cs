@@ -115,12 +115,12 @@ public static class SkinAndCoreExtensions
         return skinDiam;
     }
 
-    public static float HalfHeight(this SkinAndCore<SegmentStack> stacks)
+    public static float Height(this SkinAndCore<SegmentStack> stacks)
     {
-        var skinHalfHeight = stacks.Skin.HalfHeight;
-        var coreHalfHeight = stacks.Core.HalfHeight;
-        if (!Mathf.Approximately(skinHalfHeight, coreHalfHeight))
+        var skinHeight = stacks.Skin.Height;
+        var coreHeight = stacks.Core.Height;
+        if (!Mathf.Approximately(skinHeight, coreHeight))
             Debug.LogError("inconsistent skin/core stack heights");
-        return skinHalfHeight;
+        return skinHeight;
     }
 }

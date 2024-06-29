@@ -4,6 +4,15 @@ namespace AdaptiveTanks;
 
 public static class SegmentStacker
 {
+    public static float MinHeight(
+        float diameter, SelectedSegments skinSegments, SelectedSegments coreSegments)
+    {
+        // TODO: do less work here?
+        // But most of the algorithm still needs to run due to negotiation.
+        var solution = SolveStack(diameter, 0f, skinSegments, coreSegments, [1f], 0f);
+        return solution.Height();
+    }
+
     public static SkinAndCore<SegmentStack> SolveStack(
         float diameter,
         float height,

@@ -58,7 +58,7 @@ public partial class ModuleAdaptiveTankBase
     {
         part.GetOrCreateAnchor(SkinStackAnchorName).localPosition =
             part.GetOrCreateAnchor(CoreStackAnchorName).localPosition =
-                Vector3.down * currentStacks.HalfHeight();
+                Vector3.down * currentStacks.Height() * 0.5f;
         part.GetOrCreateAnchor(SkinStackAnchorName).localPosition +=
             Vector3.forward * diameter * 1.5f;
     }
@@ -98,9 +98,10 @@ public partial class ModuleAdaptiveTankBase
 
     protected void UpdateAttachNodes()
     {
-        nodeTop.MoveTo(Vector3.up * currentStacks.HalfHeight());
-        nodeBottom.MoveTo(Vector3.down * currentStacks.HalfHeight());
-        nodeSurface.MoveTo(Vector3.right * currentStacks.Diameter() / 2f);
+        var halfHeight = currentStacks.Height() * 0.5f;
+        nodeTop.MoveTo(Vector3.up * halfHeight);
+        nodeBottom.MoveTo(Vector3.down * halfHeight);
+        nodeSurface.MoveTo(Vector3.right * currentStacks.Diameter() * 0.5f);
         nodeTop.size = nodeBottom.size = nodeSurface.size = CalculateAttachNodeSize();
     }
 
