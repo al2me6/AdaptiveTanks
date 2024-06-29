@@ -36,6 +36,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="PolySharp" Version="1.14.1" />
+    <PackageReference Include="Krafs.Publicizer" Version="2.2.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="PolySharp" Version="1.14.1"/>
+  </ItemGroup>
+  <ItemGroup>
+    <Publicize Include="Assembly-CSharp:Part.rendererlistscreated"/>
   </ItemGroup>
 </Project>

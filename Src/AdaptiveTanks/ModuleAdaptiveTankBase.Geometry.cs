@@ -49,6 +49,8 @@ public partial class ModuleAdaptiveTankBase
         RealizeGeometry(currentStacks.Skin, SkinStackAnchorName);
         RealizeGeometry(currentStacks.Core, CoreStackAnchorName);
 
+        part.ResetAllRendererCaches();
+
         var skinDistortion = currentStacks.Skin.WorstDistortion();
         var coreDistortion = currentStacks.Core.WorstDistortion();
         sWorstDistortion = $"skin {skinDistortion:P1}; core {coreDistortion:P1}";

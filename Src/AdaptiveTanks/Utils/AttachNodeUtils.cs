@@ -54,12 +54,4 @@ public static class AttachNodeUtils
             }
         }
     }
-
-    public static void PushBy(this Part part, Vector3 worldDelta)
-    {
-        // Gotmachine (private communication): `orgPos` is the part position relative to the root
-        // part and is what is relied on generally. `attPos` and `attPos0` are legacy things that
-        // aren't used and shouldn't be relied upon.
-        part.orgPos = part.transform.position += worldDelta;
-    }
 }
