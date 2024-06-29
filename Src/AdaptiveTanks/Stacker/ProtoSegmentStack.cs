@@ -268,7 +268,7 @@ internal class ProtoSegmentStack
         var skinSuccess = skin.ShiftAspect(shift);
         var coreSuccess = core.ShiftAspect(shift);
 
-        return Mathf.Abs(shift) > maxAspectRatioDeviation && skinSuccess && coreSuccess;
+        return Mathf.Abs(shift) < maxAspectRatioDeviation && skinSuccess && coreSuccess;
     }
 
     private void ExciseIntertanks()
