@@ -97,7 +97,7 @@ public record SegmentStack(float Diameter)
         foreach (var (segmentRole, asset, baseline, _) in Placements)
         {
             sb.AppendFormat("{0:f} [{1}]: {2}\n",
-                baseline, segmentRole, asset.mu.Split('/').Last());
+                baseline, segmentRole, asset.mu.Split('/')[^1]);
         }
 
         return sb.ToString();

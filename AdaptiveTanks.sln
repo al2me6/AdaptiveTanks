@@ -14,7 +14,6 @@ Global
 		{9C14333E-BB70-4CCD-8E1C-951C66794320}.Debug|x64.ActiveCfg = Debug|x64
 		{9C14333E-BB70-4CCD-8E1C-951C66794320}.Debug|x64.Build.0 = Debug|x64
 		{9C14333E-BB70-4CCD-8E1C-951C66794320}.Release|x64.ActiveCfg = Release|x64
-		{9C14333E-BB70-4CCD-8E1C-951C66794320}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
