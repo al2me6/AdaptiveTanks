@@ -41,6 +41,13 @@ public partial class ModuleAdaptiveTankBase
             if (!segmentMeshCache.GetOrCreateValue(muPath).TryPop(out var segmentMesh))
             {
                 segmentMesh = GameDatabase.Instance.GetModel(muPath);
+
+                if (segmentMesh == null)
+                {
+                    Debug.LogError($"model `{muPath}` was not found");
+                    continue;
+                }
+
                 segmentMesh.name = muPath;
                 createdNewGO = true;
                 Debug.Log($"instantiated new GO {muPath}");
