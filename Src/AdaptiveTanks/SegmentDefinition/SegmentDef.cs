@@ -51,6 +51,8 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
 
     public Asset[] assets;
 
+    public Vector2 supportedDiameters;
+
     #endregion
 
     #region deserialization
@@ -93,7 +95,17 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
 
         if (minimumTankAspectRatio <= 0f)
         {
+            Debug.LogWarning(
+                $"segment `{name}`: invalid minimum tank aspect ratio {minimumTankAspectRatio}");
             minimumTankAspectRatio = assets.Select(asset => asset.AspectRatio).Min() * 0.5f;
+        }
+
+        supportedDiameters = assets.Select(a => a.diameterRange).BoundsOfIntervals();
+
+        if (!MathUtils.IntervalsAreContiguous(assets.Select(a => a.diameterRange)))
+        {
+            Debug.LogError(
+                $"assets of segment `{name}` do not support a contiguous diameter range");
         }
 
         foreach (var asset in assets) asset.Segment = this;

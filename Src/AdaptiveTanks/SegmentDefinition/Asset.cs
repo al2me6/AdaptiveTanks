@@ -37,10 +37,7 @@ public class Asset : ConfigNodePersistenceBase
     public float MaxDiameter => diameterRange.y;
 
     public bool SupportsDiameter(float diameter) =>
-        true;
-    // MinDiameter <= diameter && diameter < MaxDiameter;
-    // TODO actually surface this to the UI so this doesn't explode.
-    // TODO validate continuity of supported ranges.
+        MinDiameter <= diameter && diameter <= MaxDiameter;
 
     public static (float stretchA, float stretchB) NegotiateAspectRatio(
         Asset a, Asset b, float biasA)

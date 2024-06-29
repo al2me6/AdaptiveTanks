@@ -130,6 +130,8 @@ public partial class ModuleAdaptiveTankBase
     protected SegmentDef Segment(Layer layer, Role role) =>
         Library<SegmentDef>.Get(SegmentName(layer, role));
 
+    // TODO: this needs caching.
+
     public SelectedSegments SkinSegments() => new(
         tank: skinBodyVariant,
         terminatorTop: skinNoseVariant,
@@ -190,6 +192,8 @@ public partial class ModuleAdaptiveTankBase
 
     protected void OnDimensionModified(BaseField f, object obj)
     {
+        // Note that increasing the diameter may force the height to increase.
+        if (f.name == nameof(diameter)) UpdateDimensionLimits();
         ReStack();
     }
 
@@ -312,8 +316,16 @@ public partial class ModuleAdaptiveTankBase
 
     protected void UpdateDimensionLimits()
     {
-        var minDiameterClamped = minDiameter;
-        var maxDiameterClamped = maxDiameter;
+        // TODO: what happens if this ends up empty?
+        var diameterRange = Enumerable
+            .Concat(SkinSegments(), CoreSegments())
+            .Select(seg => seg.supportedDiameters)
+            .IntersectionOfIntervals();
+
+        var minDiameterClamped =
+            MathUtils.RoundUpTo(Mathf.Max(minDiameter, diameterRange.x), dimensionIncrementSmall);
+        var maxDiameterClamped =
+            MathUtils.RoundDownTo(Mathf.Min(maxDiameter, diameterRange.y), dimensionIncrementSmall);
 
         Fields[nameof(diameter)].AsEditor<UI_FloatEdit>()
             .SetMinMax(minDiameterClamped, maxDiameterClamped);
@@ -325,7 +337,7 @@ public partial class ModuleAdaptiveTankBase
 
         Fields[nameof(height)].AsEditor<UI_FloatEdit>()
             .SetMinMax(minHeightClamped, maxHeight);
-        height.Clamp(minDiameterClamped, maxDiameterClamped);
+        height.Clamp(minHeightClamped, maxHeight);
 
         MonoUtilities.RefreshPartContextWindow(part);
     }

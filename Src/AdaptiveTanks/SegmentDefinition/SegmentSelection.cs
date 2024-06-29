@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace AdaptiveTanks;
 
@@ -13,7 +15,7 @@ public record SelectedSegments(
     SegmentDef? TankCapInternalBottom,
     SegmentAlignment AlignTop,
     SegmentAlignment AlignBottom
-)
+) : IEnumerable<SegmentDef>
 {
     public SelectedSegments(
         string tank,
@@ -43,4 +45,16 @@ public record SelectedSegments(
         SegmentRole.TankCapInternalBottom => TankCapInternalBottom,
         _ => throw new ArgumentOutOfRangeException(nameof(role))
     };
+
+    public IEnumerator<SegmentDef> GetEnumerator()
+    {
+        yield return Tank;
+        yield return TerminatorTop;
+        yield return TerminatorBottom;
+        if (Intertank != null) yield return Intertank;
+        if (TankCapInternalTop != null) yield return TankCapInternalTop;
+        if (TankCapInternalBottom != null) yield return TankCapInternalBottom;
+    }
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
