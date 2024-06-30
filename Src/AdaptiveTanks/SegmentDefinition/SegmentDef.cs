@@ -51,8 +51,6 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
 
     [Persistent] public float minimumTankAspectRatio = 0.1f;
 
-    public Asset[] assets;
-
     public Asset[] assets = null!;
 
     #endregion
@@ -63,17 +61,30 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
     {
         base.Load(node);
 
+        ValidateRole();
+        ValidateAlignment();
+
+        assets = node.LoadAllFromNodes<Asset>().OrderBy(asset => asset.AspectRatio).ToArray();
+        ValidateAssets();
+        foreach (var asset in assets) asset.Segment = this;
+        SupportedDiameters = assets.Select(a => a.diameterRange).BoundsOfIntervals();
+    }
+
+    public string ItemName() => name;
+
+    private void ValidateRole()
+    {
         if (role.HasFlag(SegmentRoleCfg.accessory) && role != SegmentRoleCfg.accessory)
         {
             Debug.LogWarning($"accessory segment `{name}` may not declare other roles");
             role = SegmentRoleCfg.accessory;
         }
 
-        if (role == SegmentRoleCfg.accessory)
-        {
-            align = SegmentAlignmentCfg.pinInteriorEnd;
-        }
+        if (role == SegmentRoleCfg.accessory) align = SegmentAlignmentCfg.pinInteriorEnd;
+    }
 
+    private void ValidateAlignment()
+    {
         if (align.HasFlag(SegmentAlignmentCfg.pinInteriorEnd)
             && role != SegmentRoleCfg.accessory
             && !role.HasFlag(SegmentRoleCfg.tankCapTerminal))
@@ -87,8 +98,10 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
             Debug.LogWarning($"segment `{name}`: invalid alignment bias {strictAlignmentBias}");
             strictAlignmentBias = Mathf.Clamp01(strictAlignmentBias);
         }
+    }
 
-        assets = node.LoadAllFromNodes<Asset>().OrderBy(asset => asset.AspectRatio).ToArray();
+    private void ValidateAssets()
+    {
         if (assets.Length == 0)
         {
             Debug.LogWarning($"segment `{name}` contained no assets; adding default");
@@ -102,17 +115,11 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
             minimumTankAspectRatio = assets.Select(asset => asset.AspectRatio).Min() * 0.5f;
         }
 
-        SupportedDiameters = assets.Select(a => a.diameterRange).BoundsOfIntervals();
-
         if (!MathUtils.IntervalsAreContiguous(assets.Select(a => a.diameterRange)))
         {
             Debug.LogError($"segment `{name}` supports a disjoint diameter range");
         }
-
-        foreach (var asset in assets) asset.Segment = this;
     }
-
-    public string ItemName() => name;
 
     #endregion
 
