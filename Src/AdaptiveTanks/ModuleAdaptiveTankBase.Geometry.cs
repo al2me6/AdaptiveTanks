@@ -32,7 +32,7 @@ public partial class ModuleAdaptiveTankBase
             segmentMeshCache.GetOrCreateValue(segmentMesh.name).Add(segmentMesh.gameObject);
         }
 
-        var createdNewGO = false;
+        var instantiatedNewGO = false;
 
         Debug.Log($"{anchorName} solution:\n{newStack.DebugPrint()}");
 
@@ -49,7 +49,7 @@ public partial class ModuleAdaptiveTankBase
                 }
 
                 segmentMesh.name = muPath;
-                createdNewGO = true;
+                instantiatedNewGO = true;
                 Debug.Log($"instantiated new GO {muPath}");
             }
 
@@ -68,15 +68,15 @@ public partial class ModuleAdaptiveTankBase
             }
         }
 
-        return createdNewGO;
+        return instantiatedNewGO;
     }
 
     protected void RealizeGeometry()
     {
-        var generatedMesh = RealizeGeometry(currentStacks.Skin, SkinStackAnchorName);
-        generatedMesh |= RealizeGeometry(currentStacks.Core, CoreStackAnchorName);
+        var didInstantiateGO = RealizeGeometry(currentStacks.Skin, SkinStackAnchorName);
+        didInstantiateGO |= RealizeGeometry(currentStacks.Core, CoreStackAnchorName);
 
-        if (generatedMesh) part.ResetAllRendererCaches();
+        if (didInstantiateGO) part.ResetAllRendererCaches();
 
         var skinDistortion = currentStacks.Skin.WorstDistortion();
         var coreDistortion = currentStacks.Core.WorstDistortion();

@@ -7,6 +7,8 @@ using UnityEngine;
 
 namespace AdaptiveTanks;
 
+#nullable enable
+
 [Flags]
 public enum SegmentRoleCfg : byte
 {
@@ -37,8 +39,8 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
 {
     #region fields
 
-    [Persistent] public string name;
-    [Persistent] protected string displayName;
+    [Persistent] public string name = null!;
+    [Persistent] protected string? displayName;
 
     [Persistent] public SegmentRoleCfg role = SegmentRoleCfg.tank;
     [Persistent] public CapPositionCfg capPosition = CapPositionCfg.either;
@@ -51,7 +53,7 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
 
     public Asset[] assets;
 
-    public Vector2 supportedDiameters;
+    public Asset[] assets = null!;
 
     #endregion
 
@@ -100,12 +102,11 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
             minimumTankAspectRatio = assets.Select(asset => asset.AspectRatio).Min() * 0.5f;
         }
 
-        supportedDiameters = assets.Select(a => a.diameterRange).BoundsOfIntervals();
+        SupportedDiameters = assets.Select(a => a.diameterRange).BoundsOfIntervals();
 
         if (!MathUtils.IntervalsAreContiguous(assets.Select(a => a.diameterRange)))
         {
-            Debug.LogError(
-                $"assets of segment `{name}` do not support a contiguous diameter range");
+            Debug.LogError($"segment `{name}` supports a disjoint diameter range");
         }
 
         foreach (var asset in assets) asset.Segment = this;
@@ -118,6 +119,8 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
     #region queries
 
     public string DisplayName => displayName ?? name;
+
+    public Vector2 SupportedDiameters { get; private set; }
 
     public bool IsAccessory => role == SegmentRoleCfg.accessory;
     public bool IsFueled => !IsAccessory;
@@ -166,7 +169,7 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
 
     public Asset GetBestAssetFor(float diameter, float targetAspect)
     {
-        Asset best = null;
+        Asset? best = null;
         var bestDeviation = float.PositiveInfinity;
         foreach (var candidate in GetAllAssetsFor(diameter))
         {
@@ -176,7 +179,7 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
             bestDeviation = candidateDeviation;
         }
 
-        return best;
+        return best!;
     }
 
     #endregion

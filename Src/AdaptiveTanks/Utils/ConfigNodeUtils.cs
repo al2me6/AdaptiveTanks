@@ -8,11 +8,11 @@ public static class ConfigNodeUtils
         where T : IConfigNode, new()
     {
         var nodeName = typeof(T).Name;
-        for (var i = 0; i < node.CountNodes; ++i)
+        foreach (ConfigNode child in node.nodes)
         {
-            if (node.nodes[i].name != nodeName) continue;
+            if (child.name != nodeName) continue;
             T item = new();
-            item.Load(node.nodes[i]);
+            item.Load(child);
             yield return item;
         }
     }
@@ -31,9 +31,8 @@ public static class ConfigNodeUtils
 
     public static IEnumerable<string> LoadAllNamesFromNodes(this ConfigNode node, string nodeName)
     {
-        for (var i = 0; i < node.CountNodes; ++i)
+        foreach (ConfigNode child in node.nodes)
         {
-            var child = node.nodes[i];
             if (child.name != nodeName || !child.HasValue("name")) continue;
             yield return child.GetValue("name");
         }

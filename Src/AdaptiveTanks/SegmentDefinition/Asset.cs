@@ -29,7 +29,7 @@ public class Asset : ConfigNodePersistenceBase
         textures = node.LoadAllFromNodes<Texture>().ToArray();
     }
 
-    public SegmentDef Segment { get; set; }
+    public SegmentDef Segment { get; internal set; }
 
     public float AspectRatio => nativeHeight / nativeDiameter;
 

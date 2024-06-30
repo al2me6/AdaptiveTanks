@@ -319,7 +319,7 @@ public partial class ModuleAdaptiveTankBase
         // TODO: what happens if this ends up empty?
         var diameterRange = Enumerable
             .Concat(SkinSegments(), CoreSegments())
-            .Select(seg => seg.supportedDiameters)
+            .Select(seg => seg.SupportedDiameters)
             .IntersectionOfIntervals();
 
         var minDiameterClamped =
