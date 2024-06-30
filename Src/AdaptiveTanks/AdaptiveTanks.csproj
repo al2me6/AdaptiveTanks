@@ -1,27 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net48</TargetFramework>
-    <Platforms>x64</Platforms>
-    <Configurations>Release;Debug</Configurations>
-    <OutputType>Library</OutputType>
-    <LangVersion>latest</LangVersion>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <OutputPath>..\..\GameData\AdaptiveTanks\Plugins\</OutputPath>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
-    <DebugType>none</DebugType>
-  </PropertyGroup>
   <ItemGroup>
-    <Reference Update="System">
-      <Private>false</Private>
-    </Reference>
-    <Reference Update="System.Core">
-      <Private>false</Private>
-    </Reference>
     <Reference Include="Assembly-CSharp">
       <Private>false</Private>
     </Reference>
