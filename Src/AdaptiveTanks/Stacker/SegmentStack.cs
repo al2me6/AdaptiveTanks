@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace AdaptiveTanks;
 
+/// <summary>
+/// In diameter-normalized (i.e. aspect ratio) units.
+/// </summary>
 public readonly record struct SegmentPlacement(
     SegmentRole Role,
     Asset Asset,
@@ -11,12 +14,12 @@ public readonly record struct SegmentPlacement(
     float Stretch
 );
 
-public readonly record struct SegmentTransformation(Vector3 Scale, Vector3 Offset)
+public readonly record struct SegmentTransformation(Vector3 RealScale, Vector3 RealOffset)
 {
     public void ApplyTo(GameObject go)
     {
-        go.transform.localScale = Scale;
-        go.transform.localPosition = Offset;
+        go.transform.localScale = RealScale;
+        go.transform.localPosition = RealOffset;
     }
 }
 
@@ -24,27 +27,28 @@ public class SegmentStack
 {
     public List<SegmentPlacement> Placements { get; } = [];
 
-    public void Add(SegmentRole role, Asset asset, float baseline, float stretch)
+    public void Add(SegmentRole role, Asset asset, float normBaseline, float normStretch)
     {
-        Placements.Add(new SegmentPlacement(role, asset, baseline, stretch));
+        Placements.Add(new SegmentPlacement(role, asset, normBaseline, normStretch));
     }
 
-    public void Add(BodySolution bodySolution, float baseline)
+    public void Add(BodySolution bodySolution, float normBaseline)
     {
         foreach (var segment in bodySolution.Stack)
         {
-            Add(SegmentRole.Tank, segment.Asset, baseline, segment.Stretch);
-            baseline += segment.StretchedAspectRatio;
+            Add(SegmentRole.Tank, segment.Asset, normBaseline, segment.Stretch);
+            normBaseline += segment.StretchedAspectRatio;
         }
     }
 
     public IEnumerable<(string muPath, SegmentTransformation transformation)> IterSegments(
         float diameter)
     {
-        foreach (var (segmentRole, asset, baseline, stretch) in Placements)
+        foreach (var (segmentRole, asset, normBaseline, stretch) in Placements)
         {
-            var effectiveDiameter = diameter / asset.nativeDiameter;
-            var nativeHeight = asset.nativeDiameter * asset.AspectRatio;
+            var yStretch = stretch;
+            var nativeHeight = asset.nativeHeight;
+            var nativeDiameter = asset.nativeDiameter;
 
             var nativeBaseline = asset.nativeBaseline;
             (nativeBaseline, var nativeTop) = asset.nativeOrientationIsDown
@@ -58,10 +62,17 @@ public class SegmentStack
                 or (SegmentRole.Intertank, true)
                 or (SegmentRole.TankCapInternalTop, true)
                 or (SegmentRole.TankCapInternalBottom, false);
+            if (shouldFlip) yStretch *= -1;
+            if (shouldFlip) nativeBaseline = -nativeTop;
 
-            var flipMultiplier = shouldFlip ? -1f : 1f;
+            var realScale =
+                new Vector3(1f, yStretch, 1f) * diameter / nativeDiameter;
+            var realOffset =
+                Vector3.up * (normBaseline - nativeBaseline / nativeDiameter * stretch) * diameter;
 
-            var scale = new Vector3(1f, stretch * flipMultiplier, 1f) * effectiveDiameter;
+            yield return (asset.mu, new SegmentTransformation(realScale, realOffset));
+        }
+    }
 
             var flippedNativeBaseline = shouldFlip ? -nativeTop : nativeBaseline;
             var normalizedNativeBaseline = flippedNativeBaseline / asset.nativeDiameter;
