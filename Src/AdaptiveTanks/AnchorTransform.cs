@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace AdaptiveTanks;
 
-public static class Geometry
+public static class AnchorTransform
 {
     public const string RootAnchorName = "__ATRoot";
 
@@ -16,5 +16,3 @@ public static class Geometry
         return root.FindOrCreateChild(name);
     }
 }
-
-public record SkinAndCore<T>(T Skin, T Core);

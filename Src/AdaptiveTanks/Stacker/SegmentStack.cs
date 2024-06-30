@@ -20,14 +20,9 @@ public readonly record struct SegmentTransformation(Vector3 Scale, Vector3 Offse
     }
 }
 
-public record SegmentStack(float Diameter)
+public class SegmentStack
 {
     public List<SegmentPlacement> Placements { get; } = [];
-
-    public float AspectRatio { get; internal set; }
-
-    public float Height => AspectRatio * Diameter;
-    public float HalfHeight => Height * 0.5f;
 
     public void Add(SegmentRole role, Asset asset, float baseline, float stretch)
     {
@@ -43,11 +38,12 @@ public record SegmentStack(float Diameter)
         }
     }
 
-    public IEnumerable<(string muPath, SegmentTransformation transformation)> IterSegments()
+    public IEnumerable<(string muPath, SegmentTransformation transformation)> IterSegments(
+        float diameter)
     {
         foreach (var (segmentRole, asset, baseline, stretch) in Placements)
         {
-            var effectiveDiameter = Diameter / asset.nativeDiameter;
+            var effectiveDiameter = diameter / asset.nativeDiameter;
             var nativeHeight = asset.nativeDiameter * asset.AspectRatio;
 
             var nativeBaseline = asset.nativeBaseline;
@@ -69,7 +65,7 @@ public record SegmentStack(float Diameter)
 
             var flippedNativeBaseline = shouldFlip ? -nativeTop : nativeBaseline;
             var normalizedNativeBaseline = flippedNativeBaseline / asset.nativeDiameter;
-            var offset = Vector3.up * (baseline - normalizedNativeBaseline * stretch) * Diameter;
+            var offset = Vector3.up * (baseline - normalizedNativeBaseline * stretch) * diameter;
 
             yield return (asset.mu, new SegmentTransformation(scale, offset));
         }
@@ -100,23 +96,13 @@ public record SegmentStack(float Diameter)
     }
 }
 
-public static class SkinAndCoreExtensions
+public record SegmentStacks(
+    float Diameter,
+    float AspectRatio,
+    SegmentStack Skin,
+    SegmentStack Core
+)
 {
-    public static float Diameter(this SkinAndCore<SegmentStack> stacks)
-    {
-        var skinDiam = stacks.Skin.Diameter;
-        var coreDiam = stacks.Core.Diameter;
-        if (!Mathf.Approximately(skinDiam, coreDiam))
-            Debug.LogError("inconsistent skin/core stack diameters");
-        return skinDiam;
-    }
-
-    public static float Height(this SkinAndCore<SegmentStack> stacks)
-    {
-        var skinHeight = stacks.Skin.Height;
-        var coreHeight = stacks.Core.Height;
-        if (!Mathf.Approximately(skinHeight, coreHeight))
-            Debug.LogError("inconsistent skin/core stack heights");
-        return skinHeight;
-    }
+    public float Height => Diameter * AspectRatio;
+    public float HalfHeight => Height * 0.5f;
 }

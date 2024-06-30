@@ -304,9 +304,9 @@ internal class ProtoSegmentStack
         }
     }
 
-    public SegmentStack Elaborate()
+    public (SegmentStack Stack, float AspectRatio) Elaborate()
     {
-        var stack = new SegmentStack(Diameter);
+        var stack = new SegmentStack();
         var baseline = 0f;
 
         foreach (var seg in ProtoSegments)
@@ -340,8 +340,7 @@ internal class ProtoSegmentStack
             }
         }
 
-        stack.AspectRatio = baseline;
-        return stack;
+        return (stack, baseline);
     }
 
     #endregion

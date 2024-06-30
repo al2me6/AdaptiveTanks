@@ -9,6 +9,9 @@ public static class MathUtils
     public static bool ApproxEqAbsolute(float a, float b, float epsilon) =>
         Mathf.Abs(a - b) < epsilon;
 
+    public static bool ApproxEqRelative(float a, float b, float ratio) =>
+        Mathf.Abs(a - b) <= Mathf.Abs(MaxByMagnitude(a, b)) * ratio;
+
     public static void Clamp(this ref float value, float min, float max) =>
         value = Mathf.Clamp(value, min, max);
 

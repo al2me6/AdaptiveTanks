@@ -19,11 +19,11 @@ public partial class ModuleAdaptiveTankBase
     public const string SkinStackAnchorName = "__ATSkinStack";
     public const string CoreStackAnchorName = "__ATCoreStack";
 
-    protected SkinAndCore<SegmentStack> currentStacks;
+    protected SegmentStacks currentStacks;
 
     private static readonly Dictionary<string, List<GameObject>> segmentMeshCache = new();
 
-    protected bool RealizeGeometry(SegmentStack newStack, string anchorName)
+    protected bool RealizeGeometry(SegmentStack newStack, float diam, string anchorName)
     {
         var anchor = part.GetOrCreateAnchor(anchorName);
 
@@ -36,7 +36,7 @@ public partial class ModuleAdaptiveTankBase
 
         Debug.Log($"{anchorName} solution:\n{newStack.DebugPrint()}");
 
-        foreach (var (muPath, transformation) in newStack.IterSegments())
+        foreach (var (muPath, transformation) in newStack.IterSegments(diam))
         {
             if (!segmentMeshCache.GetOrCreateValue(muPath).TryPop(out var segmentMesh))
             {
@@ -73,8 +73,10 @@ public partial class ModuleAdaptiveTankBase
 
     protected void RealizeGeometry()
     {
-        var didInstantiateGO = RealizeGeometry(currentStacks.Skin, SkinStackAnchorName);
-        didInstantiateGO |= RealizeGeometry(currentStacks.Core, CoreStackAnchorName);
+        var didInstantiateGO =
+            RealizeGeometry(currentStacks.Skin, currentStacks.Diameter, SkinStackAnchorName);
+        didInstantiateGO |=
+            RealizeGeometry(currentStacks.Core, currentStacks.Diameter, CoreStackAnchorName);
 
         if (didInstantiateGO) part.ResetAllRendererCaches();
 
@@ -87,7 +89,7 @@ public partial class ModuleAdaptiveTankBase
     {
         part.GetOrCreateAnchor(SkinStackAnchorName).localPosition =
             part.GetOrCreateAnchor(CoreStackAnchorName).localPosition =
-                Vector3.down * currentStacks.Height() * 0.5f;
+                Vector3.down * currentStacks.HalfHeight;
         // TODO: skin transparency somehow?
         // part.GetOrCreateAnchor(SkinStackAnchorName).localPosition +=
         //     Vector3.forward * diameter * 1.5f;
@@ -95,7 +97,7 @@ public partial class ModuleAdaptiveTankBase
 
     public void ReStack()
     {
-        var oldDiameter = currentStacks?.Diameter();
+        var oldDiameter = currentStacks?.Diameter;
         currentStacks = SegmentStacker.SolveStack(
             diameter,
             height,
@@ -104,7 +106,7 @@ public partial class ModuleAdaptiveTankBase
             [intertankFraction, 1f - intertankFraction],
             maxIntertankVolumetricDeviation);
 
-        var solutionHeight = currentStacks.Height();
+        var solutionHeight = currentStacks.Height;
         if (!Mathf.Approximately(height, solutionHeight))
         {
             Debug.LogError($"solution height ({solutionHeight}) differs from target ({height})");
@@ -140,10 +142,10 @@ public partial class ModuleAdaptiveTankBase
 
     protected void UpdateAttachNodes()
     {
-        var halfHeight = currentStacks.Height() * 0.5f;
+        var halfHeight = currentStacks.HalfHeight;
         nodeTop.MoveTo(Vector3.up * halfHeight);
         nodeBottom.MoveTo(Vector3.down * halfHeight);
-        nodeSurface.MoveTo(Vector3.right * currentStacks.Diameter() * 0.5f);
+        nodeSurface.MoveTo(Vector3.right * diameter * 0.5f);
         nodeTop.size = nodeBottom.size = nodeSurface.size = CalculateAttachNodeSize();
     }
 

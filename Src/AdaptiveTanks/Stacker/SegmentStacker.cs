@@ -1,19 +1,17 @@
+using AdaptiveTanks.Utils;
+
 namespace AdaptiveTanks;
 
 #nullable enable
 
 public static class SegmentStacker
 {
-    public static float MinHeight(
-        float diameter, SelectedSegments skinSegments, SelectedSegments coreSegments)
-    {
-        // TODO: do less work here?
-        // But most of the algorithm still needs to run due to negotiation.
-        var solution = SolveStack(diameter, 0f, skinSegments, coreSegments, [1f], 0f);
-        return solution.Height();
-    }
+    // TODO: do less work here?
+    // But most of the algorithm still needs to run due to negotiation.
+    public static float MinHeight(float diameter, SelectedSegments skin, SelectedSegments core) =>
+        SolveStack(diameter, 0f, skin, core, [1f], 0f).Height;
 
-    public static SkinAndCore<SegmentStack> SolveStack(
+    public static SegmentStacks SolveStack(
         float diameter,
         float height,
         SelectedSegments skinSegments,
@@ -41,6 +39,12 @@ public static class SegmentStacker
         skinProto.SolveFlexSegments();
         coreProto.SolveFlexSegments();
 
-        return new SkinAndCore<SegmentStack>(skinProto.Elaborate(), coreProto.Elaborate());
+        var (skinStack, skinAspect) = skinProto.Elaborate();
+        var (coreStack, coreAspect) = coreProto.Elaborate();
+
+        if (!MathUtils.ApproxEqRelative(skinAspect, coreAspect, 1e-2f))
+            Debug.LogError($"mismatched solution heights {skinAspect}, {coreAspect}");
+
+        return new SegmentStacks(diameter, skinAspect, skinStack, coreStack);
     }
 }
