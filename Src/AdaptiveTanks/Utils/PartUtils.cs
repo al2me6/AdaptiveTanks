@@ -25,7 +25,7 @@ public static class PartUtils
 
     public static bool IsAttachedToVessel(this Part part)
     {
-        if (!HighLogic.LoadedSceneIsEditor) return true;
+        if (!HighLogic.LoadedSceneIsEditor || !part.editorStarted) return true;
         return part.localRoot == EditorLogic.RootPart;
     }
 }
