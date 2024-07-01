@@ -39,7 +39,8 @@ public class ModuleAdaptiveTankStock : ModuleAdaptiveTankBase
         }
 
         B9PSModule.baseVolume = volumeL * KSPPropUnitsPerL * tankUtilization;
-        B9PSModule.UpdateVolume();
+        if (isInitialize) B9PSModule.CurrentSubtype.ActivateOnStart();
+        else B9PSModule.UpdateVolume();
         MonoUtilities.RefreshPartContextWindow(part);
     }
 

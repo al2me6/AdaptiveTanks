@@ -12,9 +12,6 @@ public abstract partial class ModuleAdaptiveTankBase : PartModule
     // This gets called on a copy of the prefab, not the prefab itself.
     public override void OnIconCreate() => InitializeConfigurationAndModel();
 
-    // This is for some reason necessary when loading a ship. Otherwise, Unity crashes.
-    public override void OnInitialize() => InitializeConfigurationAndModel();
-
     public override string GetInfo()
     {
         // This is one of the few methods that gets called on the prefab PM. Initialize here so
@@ -30,12 +27,12 @@ public abstract partial class ModuleAdaptiveTankBase : PartModule
         InitializeEditorPAW();
     }
 
-    private bool _configAndModelInitialized = false;
+    private bool configAndModelInitialized = false;
 
     protected void InitializeConfigurationAndModel()
     {
-        if (_configAndModelInitialized) return;
-        _configAndModelInitialized = true;
+        if (configAndModelInitialized) return;
+        configAndModelInitialized = true;
         if (!PartUtils.IsLoadingPrefab) RestoreCustomData();
         InitializeConfiguration();
         InitializeModel();
