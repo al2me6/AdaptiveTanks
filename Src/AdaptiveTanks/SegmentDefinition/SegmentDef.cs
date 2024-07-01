@@ -51,6 +51,8 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
 
     [Persistent] public float minimumTankAspectRatio = 0.1f;
 
+    public GeometryModel? geometryModel = null;
+
     public Asset[] assets = null!;
 
     #endregion
@@ -63,6 +65,9 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
 
         ValidateRole();
         ValidateAlignment();
+
+        geometryModel = GeometryModel.TryLoadFirstSubclassFromNode(node);
+        ValidateGeometryModel();
 
         assets = node.LoadAllFromNodes<Asset>().OrderBy(asset => asset.AspectRatio).ToArray();
         ValidateAssets();
@@ -98,6 +103,14 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
             Debug.LogWarning($"segment `{name}`: invalid alignment bias {strictAlignmentBias}");
             strictAlignmentBias = Mathf.Clamp01(strictAlignmentBias);
         }
+    }
+
+    private void ValidateGeometryModel()
+    {
+        // Strictly, only a segment for use as a core needs one. But that distinction doesn't
+        // exist here.
+        if (IsAccessory || geometryModel != null) return;
+        geometryModel = new GeometryModelCylinder();
     }
 
     private void ValidateAssets()

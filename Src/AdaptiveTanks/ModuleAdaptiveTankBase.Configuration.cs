@@ -13,7 +13,7 @@ public partial class ModuleAdaptiveTankBase
 {
     #region initialization
 
-    protected void InitializeConfiguration()
+    protected virtual void InitializeConfiguration()
     {
         if (string.IsNullOrEmpty(skinStyle) || !skinStyles.Contains(skinStyle))
             skinStyle = skinStyles[0];
@@ -194,7 +194,7 @@ public partial class ModuleAdaptiveTankBase
     {
         // Note that increasing the diameter may force the height to increase.
         if (f.name == nameof(diameter)) UpdateDimensionLimits();
-        ReStack();
+        ReStack(false);
     }
 
     protected void OnSegmentModified(BaseField f, object obj)
@@ -219,19 +219,19 @@ public partial class ModuleAdaptiveTankBase
 
         UpdateDimensionLimits();
         UpdateAvailableAlignments();
-        ReStack();
+        ReStack(false);
     }
 
     protected void OnAlignmentModified(BaseField f, object obj)
     {
-        ReStack();
+        ReStack(false);
     }
 
     protected void OnIntertankModified(BaseField f, object obj)
     {
         UpdateAvailableVariant(Layer.Skin, Role.Intertank);
         UpdateAvailableVariant(Layer.Core, Role.Intertank);
-        ReStack();
+        ReStack(false);
     }
 
     #endregion

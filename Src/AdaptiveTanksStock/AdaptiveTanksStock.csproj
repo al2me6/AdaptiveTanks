@@ -9,6 +9,9 @@
     <Reference Include="ROUtils">
       <Private>false</Private>
     </Reference>
+    <Reference Include="B9PartSwitch">
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AdaptiveTanks\AdaptiveTanks.csproj"/>

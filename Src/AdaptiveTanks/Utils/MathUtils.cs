@@ -6,6 +6,8 @@ namespace AdaptiveTanks.Utils;
 
 public static class MathUtils
 {
+    public const float M3toL = 1000f;
+
     public static bool ApproxEqAbsolute(float a, float b, float epsilon) =>
         Mathf.Abs(a - b) < epsilon;
 
@@ -17,6 +19,9 @@ public static class MathUtils
 
     public static float MinByMagnitude(float a, float b) =>
         Mathf.Abs(a) < Mathf.Abs(b) ? a : b;
+
+    public static float MaxByMagnitude(float a, float b) =>
+        Mathf.Abs(a) > Mathf.Abs(b) ? a : b;
 
     public static float RoundUpTo(float value, float increment) =>
         Mathf.Ceil(value / increment) * increment;
@@ -72,5 +77,40 @@ public static class MathUtils
         }
 
         return true;
+    }
+
+    public static float CylinderVolume(float diameter, float height) =>
+        0.25f * Mathf.PI * diameter * diameter * height;
+
+    /// <summary>
+    /// Compute the volume of a spheroid.
+    /// </summary>
+    /// <param name="a">equatorial radius</param>
+    /// <param name="c">polar radius</param>
+    public static float SpheroidVolume(float a, float c) => 4f / 3f * Mathf.PI * a * a * c;
+
+    public static float CylinderSurfaceArea(float diameter, float height) =>
+        0.5f * Mathf.PI * diameter * diameter + Mathf.PI * diameter * height;
+
+    /// <summary>
+    /// Compute the surface area of a prolate or oblate spheroid.
+    /// </summary>
+    /// <param name="a">equatorial radius</param>
+    /// <param name="c">polar radius</param>
+    public static float SpheroidSurfaceArea(float a, float c)
+    {
+        var a_sq = a * a;
+        var c_sq = c * c;
+        if (ApproxEqRelative(a, c, 1e-2f)) return 4 * Mathf.PI * a_sq; // nearly spherical
+        if (c < a) // oblate
+        {
+            var e = Mathf.Sqrt(1f - c_sq / a_sq);
+            return 2f * Mathf.PI * a_sq + Mathf.PI * c_sq / e * Mathf.Log((1f + e) / (1f - e));
+        }
+        else // c > a, prolate
+        {
+            var e = Mathf.Sqrt(1 - a_sq / c_sq);
+            return 2 * Mathf.PI * a_sq * (1f + c / (a * e) * Mathf.Asin(e));
+        }
     }
 }

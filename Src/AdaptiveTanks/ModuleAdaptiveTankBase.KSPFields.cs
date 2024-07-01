@@ -62,6 +62,10 @@ public partial class ModuleAdaptiveTankBase
     [KSPField] public float minHeight = 0.5f;
     [KSPField] public float maxHeight = 50f;
 
+    [KSPField(guiActiveEditor = true, guiName = "Volume", guiUnits = "L", guiFormat = "f0")]
+    [UI_Label]
+    public float volumeL;
+
     #endregion
 
     #region styling

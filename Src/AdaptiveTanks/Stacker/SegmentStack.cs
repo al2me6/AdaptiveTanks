@@ -12,7 +12,10 @@ public readonly record struct SegmentPlacement(
     Asset Asset,
     float Baseline,
     float Stretch
-);
+)
+{
+    public float RealHeight(float diameter) => Asset.AspectRatio * Stretch * diameter;
+}
 
 public readonly record struct SegmentTransformation(Vector3 RealScale, Vector3 RealOffset)
 {
@@ -74,12 +77,21 @@ public class SegmentStack
         }
     }
 
-            var flippedNativeBaseline = shouldFlip ? -nativeTop : nativeBaseline;
-            var normalizedNativeBaseline = flippedNativeBaseline / asset.nativeDiameter;
-            var offset = Vector3.up * (baseline - normalizedNativeBaseline * stretch) * diameter;
-
-            yield return (asset.mu, new SegmentTransformation(scale, offset));
+    public float EvaluateFueledVolume(float diameter)
+    {
+        var volume = 0f;
+        foreach (var placement in Placements)
+        {
+            var seg = placement.Asset.Segment;
+            if (!seg.IsFueled) continue;
+            var realHeight = placement.RealHeight(diameter);
+            var segVolume = seg.geometryModel!.EvaluateVolume(diameter, realHeight);
+            Debug.Log(
+                $"{seg.geometryModel.GetType().Name}(d={diameter:f}, h={realHeight:f}) = {segVolume:f2} m³");
+            volume += segVolume;
         }
+
+        return volume;
     }
 
     public float WorstDistortion()

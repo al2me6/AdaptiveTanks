@@ -11,7 +11,7 @@ public partial class ModuleAdaptiveTankBase
     public void InitializeModel()
     {
         FindStackAttachNodes();
-        ReStack();
+        ReStack(true);
     }
 
     #region stacking
@@ -95,7 +95,7 @@ public partial class ModuleAdaptiveTankBase
         //     Vector3.forward * diameter * 1.5f;
     }
 
-    public void ReStack()
+    public void ReStack(bool isInitialize)
     {
         var oldDiameter = currentStacks?.Diameter;
         currentStacks = SegmentStacker.SolveStack(
@@ -121,6 +121,8 @@ public partial class ModuleAdaptiveTankBase
 
         if (HighLogic.LoadedSceneIsEditor || HighLogic.LoadedSceneIsFlight)
             DragCubeTool.UpdateDragCubes(part);
+
+        UpdateVolume(isInitialize);
     }
 
     #endregion
