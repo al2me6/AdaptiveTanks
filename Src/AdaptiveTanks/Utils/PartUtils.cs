@@ -4,6 +4,8 @@ namespace AdaptiveTanks.Utils;
 
 public static class PartUtils
 {
+    public static bool IsLoadingPrefab => !PartLoader.Instance.IsReady();
+
     /// Reset all renderer caches, including the highlighter cache.
     /// Re-apply transparency state if necessary.
     public static void ResetAllRendererCaches(this Part part)
