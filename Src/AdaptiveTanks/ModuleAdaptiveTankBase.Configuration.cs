@@ -126,8 +126,6 @@ public partial class ModuleAdaptiveTankBase
         throw new ArgumentOutOfRangeException();
     }
 
-    protected bool intertankAllowedAndEnabled => allowIntertank && useIntertank;
-
     protected SegmentDef Segment(Layer layer, Role role) =>
         Library<SegmentDef>.Get(SegmentName(layer, role));
 
@@ -137,7 +135,7 @@ public partial class ModuleAdaptiveTankBase
         tank: skinBodyVariant,
         terminatorTop: skinNoseVariant,
         terminatorBottom: skinMountVariant,
-        intertank: intertankAllowedAndEnabled ? skinIntertankVariant : null,
+        intertank: IntertankDecision() ? skinIntertankVariant : null,
         tankCapInternalTop: TerminatorIsAccessory(Cap.Top) // TODO select
             ? SkinStyle.SegmentsByRole[Role.TankCapInternalTop].First().name
             : null,
@@ -151,7 +149,7 @@ public partial class ModuleAdaptiveTankBase
         tank: coreBodyVariant,
         terminatorTop: coreNoseVariant,
         terminatorBottom: coreMountVariant,
-        intertank: intertankAllowedAndEnabled ? coreIntertankVariant : null,
+        intertank: IntertankDecision() ? coreIntertankVariant : null,
         tankCapInternalTop: TerminatorIsAccessory(Cap.Top) // TODO select
             ? CoreStyle.SegmentsByRole[Role.TankCapInternalTop].First().name
             : null,
@@ -186,6 +184,15 @@ public partial class ModuleAdaptiveTankBase
     }
         ? SegmentAlignment.PinInteriorEnd
         : SegmentAlignment.PinBothEnds;
+
+    // Only allow biprop intertanks for now.
+    protected bool IntertankPossible() =>
+        allowIntertank &&
+        CoreStyle.SupportsIntertank && SkinStyle.SupportsIntertank &&
+        VolumetricMixtureRatio().Length == 2;
+
+    protected bool IntertankDecision() =>
+        IntertankPossible() && (enforceIntertank ? allowIntertank : useIntertank);
 
     protected abstract float[] VolumetricMixtureRatio();
 
@@ -245,11 +252,7 @@ public partial class ModuleAdaptiveTankBase
 
     public void UpdateIntertankAvailability()
     {
-        // Only allow biprop intertanks for now.
-        Fields[nameof(useIntertank)].guiActiveEditor =
-            allowIntertank && !enforceIntertank &&
-            SkinStyle.SupportsIntertank && CoreStyle.SupportsIntertank &&
-            VolumetricMixtureRatio().Length == 2;
+        Fields[nameof(useIntertank)].guiActiveEditor = !enforceIntertank && IntertankPossible();
     }
 
     protected void UpdateAvailableVariants(Layer layer)
@@ -273,7 +276,7 @@ public partial class ModuleAdaptiveTankBase
             field.guiActiveEditor = false;
             selection = BuiltinItems.EmptyAccessorySegmentName;
         }
-        else if (role == Role.Intertank && !intertankAllowedAndEnabled)
+        else if (role == Role.Intertank && !IntertankDecision())
         {
             field.guiActiveEditor = false;
         }
