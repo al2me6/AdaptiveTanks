@@ -46,7 +46,7 @@ public class ModuleAdaptiveTankStock : ModuleAdaptiveTankBase
         UpdateIntertankAvailability();
         // Note that this eventually restacks and calls `ApplyVolume`, which pokes the B9PS
         // module. Thus, any volume changes incurred by the intertank appearing/disappearing are
-        // counted for.
+        // accounted for.
         OnIntertankModified();
     }
 

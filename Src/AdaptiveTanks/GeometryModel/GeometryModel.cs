@@ -11,8 +11,8 @@ namespace AdaptiveTanks;
 public abstract class GeometryModel : ConfigNodePersistenceBase
 {
     private static readonly IReadOnlyDictionary<string, Type> subclasses = AssemblyLoader
-        .loadedAssemblies.Select(asm => asm.assembly)
-        .SelectMany(domainAssembly => domainAssembly.GetTypes())
+        .loadedAssemblies
+        .SelectMany(asm => asm.assembly.GetTypes())
         .Where(type => type.IsSubclassOf(typeof(GeometryModel)))
         .ToDictionary(type => type.Name);
 
