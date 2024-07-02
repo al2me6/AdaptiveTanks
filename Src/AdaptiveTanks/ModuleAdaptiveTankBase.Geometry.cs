@@ -103,7 +103,7 @@ public partial class ModuleAdaptiveTankBase
             height,
             SkinSegments(),
             CoreSegments(),
-            [intertankFraction, 1f - intertankFraction],
+            VolumetricMixtureRatio(),
             maxIntertankVolumetricDeviation);
 
         var solutionHeight = currentStacks.Height;

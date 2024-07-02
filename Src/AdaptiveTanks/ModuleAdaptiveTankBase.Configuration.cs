@@ -71,7 +71,6 @@ public partial class ModuleAdaptiveTankBase
     {
         Fields[nameof(diameter)].AddSelfAndSymmetryListener(OnDimensionModified);
         Fields[nameof(height)].AddSelfAndSymmetryListener(OnDimensionModified);
-        Fields[nameof(intertankFraction)].AddSelfAndSymmetryListener(OnDimensionModified);
 
         Fields[nameof(diameter)].AsEditor<UI_FloatEdit>().SetIncrements(dimensionIncrementLarge,
             dimensionIncrementSmall, dimensionIncrementSlide);
@@ -127,6 +126,8 @@ public partial class ModuleAdaptiveTankBase
         throw new ArgumentOutOfRangeException();
     }
 
+    protected bool intertankAllowedAndEnabled => allowIntertank && useIntertank;
+
     protected SegmentDef Segment(Layer layer, Role role) =>
         Library<SegmentDef>.Get(SegmentName(layer, role));
 
@@ -136,7 +137,7 @@ public partial class ModuleAdaptiveTankBase
         tank: skinBodyVariant,
         terminatorTop: skinNoseVariant,
         terminatorBottom: skinMountVariant,
-        intertank: useIntertank ? skinIntertankVariant : null,
+        intertank: intertankAllowedAndEnabled ? skinIntertankVariant : null,
         tankCapInternalTop: TerminatorIsAccessory(Cap.Top) // TODO select
             ? SkinStyle.SegmentsByRole[Role.TankCapInternalTop].First().name
             : null,
@@ -150,7 +151,7 @@ public partial class ModuleAdaptiveTankBase
         tank: coreBodyVariant,
         terminatorTop: coreNoseVariant,
         terminatorBottom: coreMountVariant,
-        intertank: useIntertank ? coreIntertankVariant : null,
+        intertank: intertankAllowedAndEnabled ? coreIntertankVariant : null,
         tankCapInternalTop: TerminatorIsAccessory(Cap.Top) // TODO select
             ? CoreStyle.SegmentsByRole[Role.TankCapInternalTop].First().name
             : null,
@@ -185,6 +186,8 @@ public partial class ModuleAdaptiveTankBase
     }
         ? SegmentAlignment.PinInteriorEnd
         : SegmentAlignment.PinBothEnds;
+
+    protected abstract float[] VolumetricMixtureRatio();
 
     #endregion
 
@@ -227,7 +230,9 @@ public partial class ModuleAdaptiveTankBase
         ReStack(false);
     }
 
-    protected void OnIntertankModified(BaseField f, object obj)
+    protected void OnIntertankModified(BaseField f, object obj) => OnIntertankModified();
+
+    protected void OnIntertankModified()
     {
         UpdateAvailableVariant(Layer.Skin, Role.Intertank);
         UpdateAvailableVariant(Layer.Core, Role.Intertank);
@@ -240,11 +245,11 @@ public partial class ModuleAdaptiveTankBase
 
     public void UpdateIntertankAvailability()
     {
-        var field = Fields[nameof(useIntertank)];
-        if (SkinStyle.SupportsIntertank && CoreStyle.SupportsIntertank)
-            field.guiActiveEditor = true;
-        else
-            field.guiActiveEditor = useIntertank = false;
+        // Only allow biprop intertanks for now.
+        Fields[nameof(useIntertank)].guiActiveEditor =
+            allowIntertank && !enforceIntertank &&
+            SkinStyle.SupportsIntertank && CoreStyle.SupportsIntertank &&
+            VolumetricMixtureRatio().Length == 2;
     }
 
     protected void UpdateAvailableVariants(Layer layer)
@@ -268,7 +273,7 @@ public partial class ModuleAdaptiveTankBase
             field.guiActiveEditor = false;
             selection = BuiltinItems.EmptyAccessorySegmentName;
         }
-        else if (role == Role.Intertank && !useIntertank)
+        else if (role == Role.Intertank && !intertankAllowedAndEnabled)
         {
             field.guiActiveEditor = false;
         }

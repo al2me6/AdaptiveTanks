@@ -12,8 +12,20 @@
     <Reference Include="B9PartSwitch">
       <Private>false</Private>
     </Reference>
+    <Reference Include="0Harmony">
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AdaptiveTanks\AdaptiveTanks.csproj"/>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Krafs.Publicizer" Version="2.2.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Publicize Include="B9PartSwitch:B9PartSwitch.ModuleB9PartSwitch.InitializeSubtypes"/>
   </ItemGroup>
 </Project>
