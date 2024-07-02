@@ -52,6 +52,8 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
     [Persistent] public float minimumTankAspectRatio = 0.1f;
 
     public GeometryModel? geometryModel = null;
+    [Persistent(name = "StructuralCost")] public ScalableProperty? structuralCost = null;
+    [Persistent(name = "StructuralMass")] public ScalableProperty? structuralMass = null;
 
     public Asset[] assets = null!;
 

@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using AdaptiveTanks.Utils;
 using UnityEngine;
 
 namespace AdaptiveTanks;
@@ -77,7 +79,7 @@ public class SegmentStack
         }
     }
 
-    public float EvaluateFueledVolume(float diameter)
+    public float EvaluateTankVolume(float diameter)
     {
         var volume = 0f;
         foreach (var placement in Placements)
@@ -93,6 +95,19 @@ public class SegmentStack
 
         return volume;
     }
+
+    // TODO: handle stretching.
+    public float EvaluateStructuralCost(float diameter) => Placements
+        .Select(placement => placement.Asset.Segment.structuralCost)
+        .WhereNotNull()
+        .Select(cost => cost.Evaluate(diameter))
+        .Sum();
+
+    public float EvaluateStructuralMass(float diameter) => Placements
+        .Select(placement => placement.Asset.Segment.structuralMass)
+        .WhereNotNull()
+        .Select(mass => mass.Evaluate(diameter))
+        .Sum();
 
     public float WorstDistortion()
     {

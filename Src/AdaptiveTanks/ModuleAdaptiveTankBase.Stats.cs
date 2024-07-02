@@ -6,15 +6,25 @@ public partial class ModuleAdaptiveTankBase : IPartCostModifier, IPartMassModifi
 {
     protected void UpdateVolume(bool isInitialize)
     {
-        volumeL = currentStacks.Core.EvaluateFueledVolume(diameter) * MathUtils.M3toL;
+        volumeL = currentStacks.Core.EvaluateTankVolume(diameter) * MathUtils.M3toL;
         ApplyVolume(isInitialize);
     }
 
     protected abstract void ApplyVolume(bool isInitialize);
 
     public ModifierChangeWhen GetModuleCostChangeWhen() => ModifierChangeWhen.FIXED;
-    public abstract float GetModuleCost(float defaultCost, ModifierStagingSituation sit);
+
+    public float GetModuleCost(float defaultCost, ModifierStagingSituation sit) =>
+        GetTankCost() + GetStructuralCost();
 
     public ModifierChangeWhen GetModuleMassChangeWhen() => ModifierChangeWhen.FIXED;
-    public abstract float GetModuleMass(float defaultMass, ModifierStagingSituation sit);
+
+    public float GetModuleMass(float defaultMass, ModifierStagingSituation sit) =>
+        GetTankMass() + GetStructuralMass();
+
+    public abstract float GetTankCost();
+    public abstract float GetTankMass();
+
+    public float GetStructuralCost() => currentStacks.Skin.EvaluateStructuralCost(diameter);
+    public float GetStructuralMass() => currentStacks.Skin.EvaluateStructuralMass(diameter);
 }

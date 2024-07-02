@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace AdaptiveTanks.Utils;
 
@@ -12,4 +13,7 @@ public static class Itertools
             if (item is T downcast) yield return downcast;
         }
     }
+
+    public static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T> iter) where T : class =>
+        iter.Where(item => item != null);
 }
