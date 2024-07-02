@@ -34,6 +34,9 @@ public class ModuleAdaptiveTankStock : ModuleAdaptiveTankBase
         if (B9PSModule == null)
             Debug.LogError($"B9PS propellant switcher `{B9PSPropellantModuleID}` not found");
 
+        if (part.Modules.IndexOf(B9PSModule) < part.Modules.IndexOf(this))
+            Debug.LogError("B9PS module must be declared after this module");
+
         base.InitializeConfiguration();
     }
 
@@ -58,11 +61,7 @@ public class ModuleAdaptiveTankStock : ModuleAdaptiveTankBase
 
     protected override float[] VolumetricMixtureRatio()
     {
-        // This is jank.
-        // The issue is that we need this in `OnIconCreate`, which may be too early for the B9PS
-        // module depending on module ordering.
-        if (B9PSModule.CurrentSubtype == null) B9PSModule.InitializeSubtypes(false);
-        var tankType = B9PSModule.CurrentSubtype!.tankType;
+        var tankType = B9PSModule.CurrentSubtype.tankType;
 
         if (mixtureRatioCache.TryGetValue(tankType.tankName, out var mr)) return mr;
 
@@ -101,8 +100,11 @@ public class ModuleAdaptiveTankStock : ModuleAdaptiveTankBase
         }
 
         B9PSModule.baseVolume = volumeL * B9PSPropUnitsPerL * tankUtilization;
-        if (isInitialize) B9PSModule.CurrentSubtype.ActivateOnStart();
-        else B9PSModule.UpdateVolume();
+
+        // We initialize earlier than B9PS. Setting the value is sufficient.
+        if (isInitialize) return;
+
+        B9PSModule.UpdateVolume();
         MonoUtilities.RefreshPartContextWindow(part);
     }
 

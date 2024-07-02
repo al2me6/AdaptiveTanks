@@ -21,9 +21,10 @@ public abstract partial class ModuleAdaptiveTankBase : PartModule
         return base.GetInfo();
     }
 
+    public override void OnInitialize() => InitializeConfigurationAndModel();
+
     public override void OnStart(StartState state)
     {
-        InitializeConfigurationAndModel();
         InitializeEditorPAW();
     }
 

@@ -34,8 +34,6 @@ public partial class ModuleAdaptiveTankBase
 
         var instantiatedNewGO = false;
 
-        Debug.Log($"{anchorName} solution:\n{newStack.DebugPrint()}");
-
         foreach (var (muPath, transformation) in newStack.IterSegments(diam))
         {
             if (!segmentMeshCache.GetOrCreateValue(muPath).TryPop(out var segmentMesh))
