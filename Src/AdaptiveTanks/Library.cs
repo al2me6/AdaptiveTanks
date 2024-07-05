@@ -61,6 +61,7 @@ public static class Library<T> where T : class, ILibraryLoad, new()
 
     public static IEnumerable<T> GetAll(IEnumerable<string> names) => names.Select(n => Items[n]);
 
+    public static bool Contains(string name) => Items.ContainsKey(name);
     public static void Load(string nodeName)
     {
         var items = new Dictionary<string, T>();
@@ -69,7 +70,13 @@ public static class Library<T> where T : class, ILibraryLoad, new()
         {
             var item = new T();
             item.Load(node);
-            items[item.ItemName()] = item;
+            var name = item.ItemName();
+            if (string.IsNullOrEmpty(name))
+            {
+                Debug.LogWarning($"Library<{typeof(T).Name}>: item must have non-empty name");
+                continue;
+            }
+            items[name] = item;
         }
 
         Items = items;

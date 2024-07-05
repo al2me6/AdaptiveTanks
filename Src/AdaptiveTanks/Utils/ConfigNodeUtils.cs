@@ -33,8 +33,16 @@ public static class ConfigNodeUtils
     {
         foreach (ConfigNode child in node.nodes)
         {
-            if (child.name != nodeName || !child.HasValue("name")) continue;
-            yield return child.GetValue("name");
+            if (child.name != nodeName) continue;
+
+            var name = child.GetValue("name");
+            if (string.IsNullOrEmpty(name))
+            {
+                Debug.LogWarning($"`{nodeName}` declaration must have non-empty name");
+                continue;
+            }
+
+            yield return name;
         }
     }
 
