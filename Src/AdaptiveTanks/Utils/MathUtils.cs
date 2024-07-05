@@ -29,6 +29,32 @@ public static class MathUtils
     public static float RoundDownTo(float value, float increment) =>
         Mathf.Floor(value / increment) * increment;
 
+    // https://github.com/dotnet/runtime/blob/5535e31a712343a63f5d7d796cd874e563e5ac14/src/libraries/System.Private.CoreLib/src/System/MathF.cs#L56C13-L76C57
+    public static unsafe float BitDecrement(float x)
+    {
+        var bits = *(int*)&x;
+
+        if ((bits & 0x7F800000) >= 0x7F800000)
+        {
+            // NaN returns NaN
+            // -Infinity returns -Infinity
+            // +Infinity returns float.MaxValue
+            return bits == 0x7F800000 ? float.MaxValue : x;
+        }
+
+        if (bits == 0x00000000)
+        {
+            // +0.0 returns -float.Epsilon
+            return -float.Epsilon;
+        }
+
+        // Negative values need to be incremented
+        // Positive values need to be decremented
+
+        bits += bits < 0 ? +1 : -1;
+        return *(float*)&bits;
+    }
+
     /// Not the set-theoretic union!
     public static Vector2 BoundsOfIntervals(this IEnumerable<Vector2> intervals)
     {

@@ -184,8 +184,13 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
         _ => null
     };
 
-    public IEnumerable<Asset> GetAllAssetsFor(float diameter) =>
-        assets.Where(a => a.SupportsDiameter(diameter));
+    public IEnumerable<Asset> GetAllAssetsFor(float diameter)
+    {
+        // `Asset.SupportsDiameter` is right-exclusive such that interval boundary `diameter`s
+        // do not return assets from both intervals. This fails for the max diameter, however.
+        if (diameter == SupportedDiameters.y) diameter = MathUtils.BitDecrement(diameter);
+        return assets.Where(a => a.SupportsDiameter(diameter));
+    }
 
     public Asset GetFirstAssetFor(float diameter) => GetAllAssetsFor(diameter).First();
 
