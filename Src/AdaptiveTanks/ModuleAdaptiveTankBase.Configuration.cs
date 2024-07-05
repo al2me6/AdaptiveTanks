@@ -303,21 +303,19 @@ public partial class ModuleAdaptiveTankBase
         var coreTerminator = Segment(Layer.Core, role);
         var field = Fields[AlignmentFieldName(position)];
 
-        switch (skinTerminator.CanToggleAlignment, coreTerminator.CanToggleAlignment)
+        switch (skinTerminator.TryGetOnlyAlignment(), coreTerminator.TryGetOnlyAlignment())
         {
-            case (true, true):
+            case (null, null):
                 field.guiActiveEditor = true;
                 break;
-            case (false, true):
+            case (SegmentAlignment align, null):
                 field.guiActiveEditor = false;
-                AlignInteriorEnd(position) =
-                    skinTerminator.TryGetOnlyAlignment()!.Value.IsInteriorEnd();
+                AlignInteriorEnd(position) = align.IsInteriorEnd();
                 break;
-            case (true, false) or (false, false):
-                // Note that in case of a mismatch, the core takes precedence.
+            // Note that in case of a mismatch, the core takes precedence.
+            case (_, SegmentAlignment align):
                 field.guiActiveEditor = false;
-                AlignInteriorEnd(position) =
-                    coreTerminator.TryGetOnlyAlignment()!.Value.IsInteriorEnd();
+                AlignInteriorEnd(position) = align.IsInteriorEnd();
                 break;
         }
     }

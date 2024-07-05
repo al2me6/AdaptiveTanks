@@ -59,21 +59,21 @@ public static class MathUtils
 
     public static bool IntervalsAreContiguous(IEnumerable<Vector2> intervals)
     {
-        List<(float x, bool enter)> endpoints = intervals
-            .SelectMany(interval => new[] { (interval.x, true), (interval.y, false) })
+        var endpoints = intervals
+            .SelectMany(i => new (float val, bool enter)[] { (i.x, true), (i.y, false) })
+            .OrderBy(pt => pt.val)
+            .ThenBy(pt => pt.enter) // Closes before opens.
             .ToList();
 
         if (endpoints.Count == 0) return false;
 
-        endpoints.Sort((a, b) => a.x.CompareTo(b.x));
-
         var coverCount = 0;
-        var lastEndpoint = endpoints[0].x;
-        foreach (var (x, open) in endpoints)
+        var lastEndpoint = endpoints[0].val;
+        foreach (var (val, open) in endpoints)
         {
-            if (coverCount == 0 && x != lastEndpoint) return false;
+            if (coverCount == 0 && val != lastEndpoint) return false;
             coverCount += open ? 1 : -1;
-            if (coverCount == 0) lastEndpoint = x;
+            if (coverCount == 0) lastEndpoint = val;
         }
 
         return true;
