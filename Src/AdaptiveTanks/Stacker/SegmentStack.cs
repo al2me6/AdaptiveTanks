@@ -52,13 +52,7 @@ public class SegmentStack
         foreach (var (segmentRole, asset, normBaseline, stretch) in Placements)
         {
             var yStretch = stretch;
-            var nativeHeight = asset.nativeHeight;
             var nativeDiameter = asset.nativeDiameter;
-
-            var nativeBaseline = asset.nativeBaseline;
-            (nativeBaseline, var nativeTop) = asset.nativeOrientationIsDown
-                ? (nativeBaseline - nativeHeight, nativeBaseline)
-                : (nativeBaseline, nativeBaseline + nativeHeight);
 
             var shouldFlip = (segmentRole, asset.nativeOrientationIsDown) is
                 (SegmentRole.Tank, true)
@@ -67,13 +61,14 @@ public class SegmentStack
                 or (SegmentRole.Intertank, true)
                 or (SegmentRole.TankCapInternalTop, true)
                 or (SegmentRole.TankCapInternalBottom, false);
+
             if (shouldFlip) yStretch *= -1;
-            if (shouldFlip) nativeBaseline = -nativeTop;
+            var nativeBottom = shouldFlip ? -asset.nativeBaseline.y : asset.nativeBaseline.x;
 
             var realScale =
                 new Vector3(1f, yStretch, 1f) * diameter / nativeDiameter;
             var realOffset =
-                Vector3.up * (normBaseline - nativeBaseline / nativeDiameter * stretch) * diameter;
+                Vector3.up * (normBaseline - nativeBottom / nativeDiameter * stretch) * diameter;
 
             yield return (asset.mu, new SegmentTransformation(realScale, realOffset));
         }

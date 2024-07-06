@@ -15,8 +15,7 @@ public class Asset : ConfigNodePersistenceBase
 {
     [Persistent] public string mu = BuiltinItems.EmptyMuPath;
     [Persistent] public float nativeDiameter = 1f;
-    [Persistent] public float nativeHeight = 1f;
-    [Persistent] public float nativeBaseline = 0f;
+    [Persistent] public Vector2 nativeBaseline = new(0f, 1f);
     [Persistent] public bool nativeOrientationIsDown = false;
 
     [Persistent] public Vector2 diameterRange = new(0f, float.PositiveInfinity);
@@ -31,7 +30,8 @@ public class Asset : ConfigNodePersistenceBase
 
     public SegmentDef Segment { get; internal set; }
 
-    public float AspectRatio => nativeHeight / nativeDiameter;
+    public float NativeHeight => Mathf.Abs(nativeBaseline.y - nativeBaseline.x);
+    public float AspectRatio => NativeHeight / nativeDiameter;
 
     public float MinDiameter => diameterRange.x;
     public float MaxDiameter => diameterRange.y;
