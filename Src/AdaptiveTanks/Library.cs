@@ -49,12 +49,14 @@ public static class LibraryLoader
 
 public static class Library<T> where T : class, ILibraryLoad, new()
 {
+    private static readonly string logTag = $"Library<{typeof(T).Name}>: ";
+
     public static IReadOnlyDictionary<string, T> Items { get; private set; } = null!;
 
     public static T Get(string name)
     {
         if (Items.TryGetValue(name, out var item)) return item;
-        throw new KeyNotFoundException($"Library<{typeof(T).Name}>: key `{name}` not found");
+        throw new KeyNotFoundException($"{logTag}key `{name}` not found");
     }
 
     public static T? MaybeGet(string? name) => name != null ? Get(name) : null;
@@ -72,11 +74,22 @@ public static class Library<T> where T : class, ILibraryLoad, new()
         foreach (var node in GameDatabase.Instance.GetConfigNodes(nodeName))
         {
             var item = new T();
-            item.Load(node);
+
+            try
+            {
+                item.Load(node);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"{logTag}exception was thrown while loading item:\n{ex}");
+                continue;
+            }
+
             var name = item.ItemName();
+
             if (string.IsNullOrEmpty(name))
             {
-                Debug.LogWarning($"Library<{typeof(T).Name}>: item must have non-empty name");
+                Debug.LogError($"{logTag}item must have non-empty name");
                 continue;
             }
 
@@ -84,6 +97,6 @@ public static class Library<T> where T : class, ILibraryLoad, new()
         }
 
         Items = items;
-        Debug.Log($"Library<{typeof(T).Name}>: loaded {Items.Count} items", true);
+        Debug.Log($"{logTag}loaded {Items.Count} items", true);
     }
 }
