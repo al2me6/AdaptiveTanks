@@ -19,7 +19,7 @@ public partial class ModuleAdaptiveTankBase
     public const string SkinStackAnchorName = "__ATSkinStack";
     public const string CoreStackAnchorName = "__ATCoreStack";
 
-    protected SegmentStacks currentStacks;
+    protected SegmentStacks segmentStacks;
 
     private static readonly Dictionary<string, List<GameObject>> segmentMeshCache = new();
 
@@ -72,14 +72,14 @@ public partial class ModuleAdaptiveTankBase
     protected void RealizeGeometry()
     {
         var didInstantiateGO =
-            RealizeGeometry(currentStacks.Skin, currentStacks.Diameter, SkinStackAnchorName);
+            RealizeGeometry(segmentStacks.Skin, segmentStacks.Diameter, SkinStackAnchorName);
         didInstantiateGO |=
-            RealizeGeometry(currentStacks.Core, currentStacks.Diameter, CoreStackAnchorName);
+            RealizeGeometry(segmentStacks.Core, segmentStacks.Diameter, CoreStackAnchorName);
 
         if (didInstantiateGO) part.ResetAllRendererCaches();
 
-        var skinDistortion = currentStacks.Skin.WorstDistortion();
-        var coreDistortion = currentStacks.Core.WorstDistortion();
+        var skinDistortion = segmentStacks.Skin.WorstDistortion();
+        var coreDistortion = segmentStacks.Core.WorstDistortion();
         sWorstDistortion = $"skin {skinDistortion:P1}; core {coreDistortion:P1}";
     }
 
@@ -87,7 +87,7 @@ public partial class ModuleAdaptiveTankBase
     {
         part.GetOrCreateAnchor(SkinStackAnchorName).localPosition =
             part.GetOrCreateAnchor(CoreStackAnchorName).localPosition =
-                Vector3.down * currentStacks.HalfHeight;
+                Vector3.down * segmentStacks.HalfHeight;
         // TODO: skin transparency somehow?
         // part.GetOrCreateAnchor(SkinStackAnchorName).localPosition +=
         //     Vector3.forward * diameter * 1.5f;
@@ -95,8 +95,8 @@ public partial class ModuleAdaptiveTankBase
 
     public void ReStack(bool isInitialize)
     {
-        var oldDiameter = currentStacks?.Diameter;
-        currentStacks = SegmentStacker.SolveStack(
+        var oldDiameter = segmentStacks?.Diameter;
+        segmentStacks = SegmentStacker.SolveStack(
             diameter,
             height,
             SkinSegments(),
@@ -104,7 +104,7 @@ public partial class ModuleAdaptiveTankBase
             VolumetricMixtureRatio(),
             maxIntertankVolumetricDeviation);
 
-        var solutionHeight = currentStacks.Height;
+        var solutionHeight = segmentStacks.Height;
         if (!Mathf.Approximately(height, solutionHeight))
         {
             Debug.LogError($"solution height ({solutionHeight}) differs from target ({height})");
@@ -142,7 +142,7 @@ public partial class ModuleAdaptiveTankBase
 
     protected void UpdateAttachNodes()
     {
-        var halfHeight = currentStacks.HalfHeight;
+        var halfHeight = segmentStacks.HalfHeight;
         nodeTop.MoveTo(Vector3.up * halfHeight);
         nodeBottom.MoveTo(Vector3.down * halfHeight);
         nodeSurface.MoveTo(Vector3.right * diameter * 0.5f);
