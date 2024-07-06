@@ -70,6 +70,8 @@ public partial class ModuleAdaptiveTankBase
 
     #region styling
 
+    public string[] availableCoreStyles;
+
     [KSPField(isPersistant = true, guiName = "Skin Style")] [UI_ChooseOption]
     public string skinStyle;
 

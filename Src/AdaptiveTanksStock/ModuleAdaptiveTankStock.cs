@@ -46,7 +46,7 @@ public class ModuleAdaptiveTankStock : ModuleAdaptiveTankBase
 
     public void OnPropellantMixtureUpdated()
     {
-        UpdateIntertankAvailability();
+        UpdateIntertankUseSelector();
         // Note that this eventually restacks and calls `ApplyVolume`, which pokes the B9PS
         // module. Thus, any volume changes incurred by the intertank appearing/disappearing are
         // accounted for.

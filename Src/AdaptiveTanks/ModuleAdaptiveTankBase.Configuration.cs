@@ -15,19 +15,19 @@ public partial class ModuleAdaptiveTankBase
 
     protected virtual void InitializeConfiguration()
     {
+        ValidateNonEmptyStyles();
         if (string.IsNullOrEmpty(skinStyle) || !skinStyles.Contains(skinStyle))
             skinStyle = skinStyles[0];
-        if (string.IsNullOrEmpty(coreStyle) || !coreStyles.Contains(coreStyle))
-            coreStyle = coreStyles[0];
+        UpdateAvailableCoreStyles();
 
         // Requires: valid styles.
-        UpdateIntertankAvailability();
-        // Requires: valid intertank availability.
         UpdateAvailableVariants(Layer.Skin);
         UpdateAvailableVariants(Layer.Core);
+        UpdateIntertankUseSelector();
         // Requires: valid segment selection.
-        UpdateAvailableAlignments();
         UpdateDimensionLimits();
+
+        UpdateAvailableAlignments();
     }
 
     protected void InitializeEditorPAW()
@@ -38,16 +38,13 @@ public partial class ModuleAdaptiveTankBase
 
     protected void InitializeStyleAndVariantSelectors()
     {
-        Fields[nameof(skinStyle)].AddSelfAndSymmetryListener(OnSegmentModified);
-        Fields[nameof(coreStyle)].AddSelfAndSymmetryListener(OnSegmentModified);
-
+        // This needs only be set once.
         Fields[nameof(skinStyle)].AsEditor<UI_ChooseOption>().SetOptions(
             skinStyles,
             skinStyles.Select(skin => Library<StyleDefSkin>.Get(skin).DisplayName));
 
-        Fields[nameof(coreStyle)].AsEditor<UI_ChooseOption>().SetOptions(
-            coreStyles,
-            coreStyles.Select(core => Library<StyleDefCore>.Get(core).DisplayName));
+        Fields[nameof(skinStyle)].AddSelfAndSymmetryListener(OnSegmentModified);
+        Fields[nameof(coreStyle)].AddSelfAndSymmetryListener(OnSegmentModified);
 
         Fields[nameof(skinStyle)].guiActiveEditor = skinStyles.Length > 1;
         Fields[nameof(coreStyle)].guiActiveEditor = coreStyles.Length > 1;
@@ -82,8 +79,8 @@ public partial class ModuleAdaptiveTankBase
 
     #region queries
 
-    public StyleDef SkinStyle => Library<StyleDefSkin>.Get(skinStyle);
-    public StyleDef CoreStyle => Library<StyleDefCore>.Get(coreStyle);
+    public StyleDefSkin SkinStyle => Library<StyleDefSkin>.Get(skinStyle);
+    public StyleDefCore CoreStyle => Library<StyleDefCore>.Get(coreStyle);
 
     public StyleDef Style(Layer layer) => layer switch
     {
@@ -214,13 +211,14 @@ public partial class ModuleAdaptiveTankBase
         switch (f.name)
         {
             case nameof(skinStyle):
-                UpdateIntertankAvailability();
+                UpdateAvailableCoreStyles();
                 UpdateAvailableVariants(Layer.Skin);
                 UpdateAvailableVariants(Layer.Core);
+                UpdateIntertankUseSelector();
                 break;
             case nameof(coreStyle):
-                UpdateIntertankAvailability();
                 UpdateAvailableVariants(Layer.Core);
+                UpdateIntertankUseSelector();
                 break;
             case nameof(skinNoseVariant) or nameof(skinMountVariant):
                 UpdateAvailableVariants(Layer.Core);
@@ -250,9 +248,36 @@ public partial class ModuleAdaptiveTankBase
 
     #region constraints
 
-    public void UpdateIntertankAvailability()
+    protected void ValidateNonEmptyStyles()
     {
-        Fields[nameof(useIntertank)].guiActiveEditor = !enforceIntertank && IntertankPossible();
+        if (skinStyles.Length == 0)
+        {
+            Debug.LogWarning($"part `{part.name}`: must contain at least one skin style");
+            skinStyles = [Library<StyleDefSkin>.Items.Keys.First()];
+        }
+
+        if (coreStyles.Length == 0)
+        {
+            Debug.LogWarning($"part `{part.name}`: must contain at least one core style");
+            coreStyles = [Library<StyleDefCore>.Items.Keys.First()];
+        }
+    }
+
+    protected void UpdateAvailableCoreStyles()
+    {
+        availableCoreStyles = SkinStyle.GetAllowedCores(coreStyles);
+        if (availableCoreStyles.Length == 0)
+        {
+            Debug.LogError($"part `{part.name}`: skin style `{skinStyle}` has no compatible cores");
+            availableCoreStyles =
+                [SkinStyle.GetAllowedCores(Library<StyleDefCore>.ItemNames).First()];
+        }
+
+        var field = Fields[nameof(coreStyle)];
+        var displays = availableCoreStyles.Select(v => Library<StyleDefCore>.Get(v).DisplayName);
+        field.AsEditor<UI_ChooseOption>().SetOptions(availableCoreStyles, displays);
+        field.guiActiveEditor = availableCoreStyles.Length > 1;
+        if (!availableCoreStyles.Contains(coreStyle)) coreStyle = availableCoreStyles[0];
     }
 
     protected void UpdateAvailableVariants(Layer layer)
@@ -288,6 +313,11 @@ public partial class ModuleAdaptiveTankBase
             field.guiActiveEditor = variants.Count > 1;
             if (!names.Contains(selection)) selection = names[0];
         }
+    }
+
+    public void UpdateIntertankUseSelector()
+    {
+        Fields[nameof(useIntertank)].guiActiveEditor = !enforceIntertank && IntertankPossible();
     }
 
     protected void UpdateAvailableAlignments()
