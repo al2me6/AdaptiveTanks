@@ -48,7 +48,6 @@ public partial class ModuleAdaptiveTankBase
 
                 segmentMesh.name = muPath;
                 instantiatedNewGO = true;
-                Debug.Log($"instantiated new GO {muPath}");
             }
 
             segmentMesh.SetActive(true);
@@ -59,11 +58,7 @@ public partial class ModuleAdaptiveTankBase
 
         foreach (var entry in segmentMeshCache)
         {
-            while (entry.Value.TryPop(out var segmentMesh))
-            {
-                Debug.Log($"destroyed GO instance {entry.Key}");
-                Destroy(segmentMesh);
-            }
+            while (entry.Value.TryPop(out var segmentMesh)) Destroy(segmentMesh);
         }
 
         return instantiatedNewGO;
