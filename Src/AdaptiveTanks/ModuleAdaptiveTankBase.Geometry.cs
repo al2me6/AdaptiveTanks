@@ -23,7 +23,8 @@ public partial class ModuleAdaptiveTankBase
 
     private static readonly Dictionary<string, List<GameObject>> segmentMeshCache = new();
 
-    protected bool RealizeGeometry(SegmentStack newStack, float diam, string anchorName)
+    protected bool RealizeGeometry(
+        SegmentStack newStack, float diam, string anchorName, string materialId)
     {
         var anchor = part.GetOrCreateAnchor(anchorName);
 
@@ -32,28 +33,24 @@ public partial class ModuleAdaptiveTankBase
             segmentMeshCache.GetOrCreateValue(segmentMesh.name).Add(segmentMesh.gameObject);
         }
 
-        var instantiatedNewGO = false;
+        var didInstantiateGO = false;
 
-        foreach (var (muPath, transformation) in newStack.IterSegments(diam))
+        foreach (var (asset, transformation) in newStack.IterSegments(diam))
         {
-            if (!segmentMeshCache.GetOrCreateValue(muPath).TryPop(out var segmentMesh))
+            if (!segmentMeshCache.GetOrCreateValue(asset.mu).TryPop(out var segmentMesh))
             {
-                segmentMesh = GameDatabase.Instance.GetModel(muPath);
-
-                if (segmentMesh == null)
-                {
-                    Debug.LogError($"model `{muPath}` was not found");
-                    continue;
-                }
-
-                segmentMesh.name = muPath;
-                instantiatedNewGO = true;
+                if (asset.Prefab == null) continue;
+                segmentMesh = Instantiate(asset.Prefab);
+                segmentMesh.name = asset.mu;
+                didInstantiateGO = true;
             }
 
             segmentMesh.SetActive(true);
             segmentMesh.transform.NestToParent(anchor);
             segmentMesh.transform.SetLayerRecursive(part.gameObject.layer);
             transformation.ApplyTo(segmentMesh);
+
+            if (asset.materials.TryGetValue(materialId, out var mat)) mat.ApplyTo(segmentMesh);
         }
 
         foreach (var entry in segmentMeshCache)
@@ -61,15 +58,21 @@ public partial class ModuleAdaptiveTankBase
             while (entry.Value.TryPop(out var segmentMesh)) Destroy(segmentMesh);
         }
 
-        return instantiatedNewGO;
+        return didInstantiateGO;
     }
 
     protected void RealizeGeometry()
     {
-        var didInstantiateGO =
-            RealizeGeometry(segmentStacks.Skin, segmentStacks.Diameter, SkinStackAnchorName);
-        didInstantiateGO |=
-            RealizeGeometry(segmentStacks.Core, segmentStacks.Diameter, CoreStackAnchorName);
+        var didInstantiateGO = RealizeGeometry(
+            segmentStacks.Skin,
+            segmentStacks.Diameter,
+            SkinStackAnchorName,
+            skinLinkedMaterial);
+        didInstantiateGO |= RealizeGeometry(
+            segmentStacks.Core,
+            segmentStacks.Diameter,
+            CoreStackAnchorName,
+            coreLinkedMaterial);
 
         if (didInstantiateGO) part.ResetAllRendererCaches();
 

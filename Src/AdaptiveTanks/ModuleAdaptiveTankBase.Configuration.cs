@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using AdaptiveTanks.Utils;
 using UnityEngine;
@@ -28,6 +29,8 @@ public partial class ModuleAdaptiveTankBase
         UpdateDimensionLimits();
 
         UpdateAvailableAlignments();
+
+        UpdateAvailableLinkedMaterials();
     }
 
     protected void InitializeEditorPAW()
@@ -62,6 +65,9 @@ public partial class ModuleAdaptiveTankBase
         Fields[nameof(mountAlignInteriorEnd)].AddSelfAndSymmetryListener(OnAlignmentModified);
 
         Fields[nameof(useIntertank)].AddSelfAndSymmetryListener(OnIntertankModified);
+
+        Fields[nameof(skinLinkedMaterial)].AddSelfAndSymmetryListener(OnLinkedMaterialModified);
+        Fields[nameof(coreLinkedMaterial)].AddSelfAndSymmetryListener(OnLinkedMaterialModified);
     }
 
     protected void InitializeDimensionSelectors()
@@ -191,6 +197,20 @@ public partial class ModuleAdaptiveTankBase
     protected bool IntertankDecision() =>
         IntertankPossible() && (enforceIntertank ? allowIntertank : useIntertank);
 
+    protected string LinkedMaterialFieldName(Layer layer) => layer switch
+    {
+        Layer.Skin => nameof(skinLinkedMaterial),
+        Layer.Core => nameof(coreLinkedMaterial),
+        _ => throw new ArgumentException(nameof(layer))
+    };
+
+    protected ref string LinkedMaterial(Layer layer)
+    {
+        if (layer == Layer.Skin) return ref skinLinkedMaterial;
+        if (layer == Layer.Core) return ref coreLinkedMaterial;
+        throw new ArgumentException(nameof(layer));
+    }
+
     protected abstract float[] VolumetricMixtureRatio();
 
     #endregion
@@ -215,10 +235,12 @@ public partial class ModuleAdaptiveTankBase
                 UpdateAvailableVariants(Layer.Skin);
                 UpdateAvailableVariants(Layer.Core);
                 UpdateIntertankUseSelector();
+                UpdateAvailableLinkedMaterials();
                 break;
             case nameof(coreStyle):
                 UpdateAvailableVariants(Layer.Core);
                 UpdateIntertankUseSelector();
+                UpdateAvailableLinkedMaterials();
                 break;
             case nameof(skinNoseVariant) or nameof(skinMountVariant):
                 UpdateAvailableVariants(Layer.Core);
@@ -244,9 +266,24 @@ public partial class ModuleAdaptiveTankBase
         ReStack(false);
     }
 
+    protected void OnLinkedMaterialModified(BaseField f, object obj)
+    {
+        ReStack(false);
+    }
+
     #endregion
 
     #region constraints
+
+    protected void UpdateUIChooseOption(
+        BaseField field, ref string backing,
+        IEnumerable<string> names, IEnumerable<string> displays)
+    {
+        var namesArr = names.ToArray();
+        field.AsEditor<UI_ChooseOption>().SetOptions(namesArr, displays);
+        field.guiActiveEditor = namesArr.Length > 1;
+        if (!namesArr.Contains(backing)) backing = namesArr[0];
+    }
 
     protected void ValidateNonEmptyStyles()
     {
@@ -273,11 +310,8 @@ public partial class ModuleAdaptiveTankBase
                 [SkinStyle.GetAllowedCores(Library<StyleDefCore>.ItemNames).First()];
         }
 
-        var field = Fields[nameof(coreStyle)];
-        var displays = availableCoreStyles.Select(v => Library<StyleDefCore>.Get(v).DisplayName);
-        field.AsEditor<UI_ChooseOption>().SetOptions(availableCoreStyles, displays);
-        field.guiActiveEditor = availableCoreStyles.Length > 1;
-        if (!availableCoreStyles.Contains(coreStyle)) coreStyle = availableCoreStyles[0];
+        UpdateUIChooseOption(Fields[nameof(coreStyle)], ref coreStyle, availableCoreStyles,
+            availableCoreStyles.Select(v => Library<StyleDefCore>.Get(v).DisplayName));
     }
 
     protected void UpdateAvailableVariants(Layer layer)
@@ -307,11 +341,9 @@ public partial class ModuleAdaptiveTankBase
         }
         else
         {
-            var names = variants.Select(v => v.name).ToArray();
-            var displays = variants.Select(v => v.DisplayName);
-            field.AsEditor<UI_ChooseOption>().SetOptions(names, displays);
-            field.guiActiveEditor = variants.Count > 1;
-            if (!names.Contains(selection)) selection = names[0];
+            UpdateUIChooseOption(
+                field, ref selection,
+                variants.Select(v => v.name), variants.Select(v => v.DisplayName));
         }
     }
 
@@ -376,6 +408,30 @@ public partial class ModuleAdaptiveTankBase
         height.Clamp(minHeightClamped, maxHeight);
 
         MonoUtilities.RefreshPartContextWindow(part);
+    }
+
+    protected void UpdateAvailableLinkedMaterials()
+    {
+        UpdateAvailableLinkedMaterials(Layer.Skin);
+        UpdateAvailableLinkedMaterials(Layer.Core);
+    }
+
+    protected void UpdateAvailableLinkedMaterials(Layer layer)
+    {
+        var field = Fields[LinkedMaterialFieldName(layer)];
+        var materials = Style(layer).linkedMaterials;
+        ref var materialId = ref LinkedMaterial(layer);
+
+        if (materials.IsEmpty())
+        {
+            materialId = "";
+            field.guiActiveEditor = false;
+            return;
+        }
+
+        UpdateUIChooseOption(
+            field, ref materialId,
+            materials.Select(mat => mat.id), materials.Select(mat => mat.DisplayName));
     }
 
     #endregion

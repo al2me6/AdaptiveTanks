@@ -118,5 +118,11 @@ public partial class ModuleAdaptiveTankBase
     [UI_Toggle(enabledText = "enabled", disabledText = "disabled")]
     public bool useIntertank;
 
+    [KSPField(isPersistant = true, guiName = "Skin Paint")] [UI_ChooseOption]
+    public string skinLinkedMaterial;
+
+    [KSPField(isPersistant = true, guiName = "Core Paint")] [UI_ChooseOption]
+    public string coreLinkedMaterial;
+
     #endregion
 }

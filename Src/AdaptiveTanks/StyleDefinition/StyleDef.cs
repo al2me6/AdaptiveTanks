@@ -9,7 +9,8 @@ namespace AdaptiveTanks;
 public abstract class StyleDef : ConfigNodePersistenceBase, ILibraryLoad
 {
     [Persistent] public string name;
-    [Persistent] public string displayName;
+    [Persistent] private string displayName = null;
+    public LinkedMaterial[] linkedMaterials;
 
     public IReadOnlyDictionary<SegmentRole, List<SegmentDef>> SegmentsByRole { get; private set; }
 
@@ -33,6 +34,8 @@ public abstract class StyleDef : ConfigNodePersistenceBase, ILibraryLoad
 
         Debug.Log($"style {name}");
         Debug.Log($"\tsegments {string.Join(", ", segments)}");
+
+        linkedMaterials = node.LoadAllFromNodes<LinkedMaterial>().ToArray();
     }
 
     protected virtual IEnumerable<string> LoadSegments(ConfigNode node) =>

@@ -46,7 +46,7 @@ public class SegmentStack
         }
     }
 
-    public IEnumerable<(string muPath, SegmentTransformation transformation)> IterSegments(
+    public IEnumerable<(Asset asset, SegmentTransformation transformation)> IterSegments(
         float diameter)
     {
         foreach (var (segmentRole, asset, normBaseline, stretch) in Placements)
@@ -70,7 +70,7 @@ public class SegmentStack
             var realOffset =
                 Vector3.up * (normBaseline - nativeBottom / nativeDiameter * stretch) * diameter;
 
-            yield return (asset.mu, new SegmentTransformation(realScale, realOffset));
+            yield return (asset, new SegmentTransformation(realScale, realOffset));
         }
     }
 

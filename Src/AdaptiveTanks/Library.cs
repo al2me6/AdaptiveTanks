@@ -59,6 +59,8 @@ public static class Library<T> where T : class, ILibraryLoad, new()
         throw new KeyNotFoundException($"{logTag}key `{name}` not found");
     }
 
+    public static T? GetOrNull(string name) => Items.TryGetValue(name, out var item) ? item : null;
+
     public static T? MaybeGet(string? name) => name != null ? Get(name) : null;
 
     public static IEnumerable<T> GetAll(IEnumerable<string> names) => names.Select(n => Items[n]);

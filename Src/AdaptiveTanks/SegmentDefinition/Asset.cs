@@ -1,15 +1,11 @@
+using System.Collections.Generic;
 using System.Linq;
 using AdaptiveTanks.Utils;
 using ROUtils.DataTypes;
 using UnityEngine;
+using Material = AdaptiveTanks.SegmentDefinition.Material;
 
 namespace AdaptiveTanks;
-
-public class Texture : ConfigNodePersistenceBase
-{
-    [Persistent] public string diffuse;
-    [Persistent] public string nrm;
-}
 
 public class Asset : ConfigNodePersistenceBase
 {
@@ -20,12 +16,33 @@ public class Asset : ConfigNodePersistenceBase
 
     [Persistent] public Vector2 diameterRange = new(0f, float.PositiveInfinity);
 
-    public Texture[] textures = [];
+    public Dictionary<string, Material> materials;
+
+    public GameObject Prefab { get; private set; }
+    public UnityEngine.Material SharedMaterial { get; private set; }
 
     public override void Load(ConfigNode node)
     {
         base.Load(node);
-        if (paints.IsEmpty()) paints = [new MaterialDef()];
+        materials = node
+            .LoadAllFromNodes<Material>()
+            .Where(mat =>
+            {
+                if (mat.id == null)
+                    Debug.LogError($"asset `{mu}`: material must have non-empty id");
+                return mat.id != null;
+            })
+            .ToDictionary(mat => mat.id);
+
+        Prefab = GameDatabase.Instance.GetModelPrefab(mu);
+        if (Prefab == null)
+        {
+            Debug.LogError($"asset `{mu}` not found");
+            return;
+        }
+
+        SharedMaterial = Prefab.GetComponentInChildren<Renderer>()?.sharedMaterial;
+        foreach (var material in materials.Values) material.Compile(this);
     }
 
     public SegmentDef Segment { get; internal set; }

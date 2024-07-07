@@ -16,7 +16,7 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
     #region fields
 
     [Persistent] public string name = null!;
-    [Persistent] protected string? displayName;
+    [Persistent] private string? displayName = null;
 
     [Persistent] public SegmentRoleCfg role = SegmentRoleCfg.tank;
     [Persistent] public CapPositionCfg capPosition = CapPositionCfg.either;
