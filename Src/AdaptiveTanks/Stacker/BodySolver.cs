@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using AdaptiveTanks.Utils;
 using UnityEngine;
 
 namespace AdaptiveTanks;
@@ -79,7 +80,7 @@ public static class BodySolver
             else break;
         }
 
-        if (stack.Count == 0) stack.Add(new StretchedAsset { Asset = availableAssets[0] });
+        if (stack.IsEmpty()) stack.Add(new StretchedAsset { Asset = availableAssets[0] });
 
         // Sort largest to smallest.
         stack.Sort((a, b) => b.Asset.AspectRatio.CompareTo(a.Asset.AspectRatio));

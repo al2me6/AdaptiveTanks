@@ -25,7 +25,7 @@ public class Asset : ConfigNodePersistenceBase
     public override void Load(ConfigNode node)
     {
         base.Load(node);
-        textures = node.LoadAllFromNodes<Texture>().ToArray();
+        if (paints.IsEmpty()) paints = [new MaterialDef()];
     }
 
     public SegmentDef Segment { get; internal set; }

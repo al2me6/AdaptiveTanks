@@ -91,7 +91,7 @@ public static class MathUtils
             .ThenBy(pt => pt.enter) // Closes before opens.
             .ToList();
 
-        if (endpoints.Count == 0) return false;
+        if (endpoints.IsEmpty()) return false;
 
         var coverCount = 0;
         var lastEndpoint = endpoints[0].val;
