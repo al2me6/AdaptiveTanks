@@ -1,9 +1,8 @@
 using System.Collections.Generic;
-using System.Linq;
+using AdaptiveTanks.SegmentDefinition;
 using AdaptiveTanks.Utils;
 using ROUtils.DataTypes;
 using UnityEngine;
-using Material = AdaptiveTanks.SegmentDefinition.Material;
 
 namespace AdaptiveTanks;
 
@@ -16,23 +15,31 @@ public class Asset : ConfigNodePersistenceBase
 
     [Persistent] public Vector2 diameterRange = new(0f, float.PositiveInfinity);
 
-    public Dictionary<string, Material> materials;
+    public Dictionary<string, AssetMaterial> Materials = new();
 
     public GameObject Prefab { get; private set; }
-    public UnityEngine.Material SharedMaterial { get; private set; }
+    public Material PrefabMaterial { get; private set; }
 
     public override void Load(ConfigNode node)
     {
         base.Load(node);
-        materials = node
-            .LoadAllFromNodes<Material>()
-            .Where(mat =>
+
+        foreach (var material in node.LoadAllFromNodes<AssetMaterial>(nodeName: "Material"))
+        {
+            if (material.LinkId == null || material.Def == null)
             {
-                if (mat.id == null)
-                    Debug.LogError($"asset `{mu}`: material must have non-empty id");
-                return mat.id != null;
-            })
-            .ToDictionary(mat => mat.id);
+                Debug.LogError($"asset `{mu}`: material must link to valid `MaterialDef`");
+                continue;
+            }
+
+            if (Materials.ContainsKey(material.LinkId))
+            {
+                Debug.LogError($"asset `{mu}`: material must have unique `linkId`");
+                continue;
+            }
+
+            Materials[material.LinkId] = material;
+        }
 
         Prefab = GameDatabase.Instance.GetModelPrefab(mu);
         if (Prefab == null)
@@ -41,8 +48,9 @@ public class Asset : ConfigNodePersistenceBase
             return;
         }
 
-        SharedMaterial = Prefab.GetComponentInChildren<Renderer>()?.sharedMaterial;
-        foreach (var material in materials.Values) material.Compile(this);
+        PrefabMaterial = Prefab.GetComponentInChildren<Renderer>()?.sharedMaterial;
+
+        foreach (var material in Materials.Values) material.Compile(this);
     }
 
     public SegmentDef Segment { get; internal set; }
