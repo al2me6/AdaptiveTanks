@@ -54,7 +54,7 @@ public static class PartUtils
         props.Opacity = opacity > 0f ? opacity : 1f;
 
         var rimFalloff = part.mpb.GetFloat(PropertyIDs._RimFalloff);
-        if (rimFalloff != 0f) props.RimFalloff = rimFalloff;
+        props.RimFalloff = rimFalloff != 0f ? rimFalloff : null;
 
         props.RimColor = part.mpb.GetColor(PropertyIDs._RimColor);
 
