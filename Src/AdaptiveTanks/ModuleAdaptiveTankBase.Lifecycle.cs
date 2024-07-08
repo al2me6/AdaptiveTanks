@@ -1,4 +1,5 @@
 ﻿using AdaptiveTanks.Utils;
+using UnityEngine;
 
 namespace AdaptiveTanks;
 
@@ -37,5 +38,10 @@ public abstract partial class ModuleAdaptiveTankBase : PartModule
         if (!PartUtils.IsLoadingPrefab) RestoreCustomData();
         InitializeConfiguration();
         InitializeModel();
+    }
+
+    public void LateUpdate()
+    {
+        RefreshMPB();
     }
 }

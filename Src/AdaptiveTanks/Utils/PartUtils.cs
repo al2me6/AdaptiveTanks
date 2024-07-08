@@ -30,4 +30,36 @@ public static class PartUtils
         if (!HighLogic.LoadedSceneIsEditor || !part.editorStarted) return true;
         return part.localRoot == EditorLogic.RootPart;
     }
+
+    public record PartMPBProperties
+    {
+        public float Opacity { get; set; }
+        public float? RimFalloff { get; set; }
+        public Color RimColor { get; set; }
+        public Color? TemperatureColor { get; set; }
+
+        public void WriteTo(ref MaterialPropertyBlock mpb)
+        {
+            mpb.SetFloat(PropertyIDs._Opacity, Opacity);
+            if (RimFalloff != null) mpb.SetFloat(PropertyIDs._RimFalloff, RimFalloff.Value);
+            mpb.SetColor(PropertyIDs._RimColor, RimColor);
+            if (TemperatureColor != null)
+                mpb.SetColor(PhysicsGlobals.TemperaturePropertyID, TemperatureColor.Value);
+        }
+    }
+
+    public static void ExtractMPBProperties(this Part part, ref PartMPBProperties props)
+    {
+        var opacity = part.mpb.GetFloat(PropertyIDs._Opacity);
+        props.Opacity = opacity > 0f ? opacity : 1f;
+
+        var rimFalloff = part.mpb.GetFloat(PropertyIDs._RimFalloff);
+        if (rimFalloff != 0f) props.RimFalloff = rimFalloff;
+
+        props.RimColor = part.mpb.GetColor(PropertyIDs._RimColor);
+
+        props.TemperatureColor = HighLogic.LoadedSceneIsFlight
+            ? part.mpb.GetColor(PhysicsGlobals.TemperaturePropertyID)
+            : null;
+    }
 }

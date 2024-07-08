@@ -19,6 +19,8 @@ public partial class ModuleAdaptiveTankBase
     [KSPField] public float attachNodeSizeIncrementFactor = 1.25f;
     [KSPField] public int maxAttachNodeSize = 6;
 
+    [KSPField] public float transparentSkinOpacity = 0.6f;
+
     #endregion
 
     #region non-serializable configuration
@@ -114,9 +116,11 @@ public partial class ModuleAdaptiveTankBase
     [KSPField] public bool enforceIntertank = false;
     [KSPField] public float maxIntertankVolumetricDeviation = 0.05f;
 
-    [KSPField(isPersistant = true, guiName = "Intertank")]
-    [UI_Toggle(enabledText = "enabled", disabledText = "disabled")]
+    [KSPField(isPersistant = true, guiName = "Intertank")] [UI_Toggle]
     public bool useIntertank;
+
+    [KSPField(guiName = "Transparent Skin", guiActiveEditor = true)] [UI_Toggle]
+    public bool transparentSkin = false;
 
     [KSPField(isPersistant = true, guiName = "Skin Paint")] [UI_ChooseOption]
     public string skinLinkedMaterial = "";

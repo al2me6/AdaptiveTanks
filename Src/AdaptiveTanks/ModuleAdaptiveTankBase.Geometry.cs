@@ -21,33 +21,36 @@ public partial class ModuleAdaptiveTankBase
 
     protected SegmentStacks? segmentStacks;
 
-    private static readonly Dictionary<string, List<GameObject>> segmentMeshCache = new();
+    protected readonly Dictionary<Transform, HashSet<Renderer>> stackRenderersCache = new();
 
-    protected bool RealizeGeometry(
-        SegmentStack newStack, float diam, string anchorName, string materialId)
+    private readonly Dictionary<string, List<GameObject>> segmentMeshCache = new();
+
+    protected bool RealizeStackIncremental(
+        SegmentStack stack, string anchorName, string materialId, bool fullRebuild)
     {
         var anchor = part.GetOrCreateAnchor(anchorName);
+        var rendererCache = stackRenderersCache.GetOrCreateValue(anchor);
 
         foreach (Transform segmentMesh in anchor)
-        {
             segmentMeshCache.GetOrCreateValue(segmentMesh.name).Add(segmentMesh.gameObject);
-        }
 
         var didInstantiateGO = false;
 
-        foreach (var (asset, transformation) in newStack.IterSegments(diam))
+        foreach (var (asset, transformation) in stack.IterSegments(diameter))
         {
-            if (!segmentMeshCache.GetOrCreateValue(asset.mu).TryPop(out var segmentMesh))
+            if (fullRebuild ||
+                !segmentMeshCache.GetOrCreateValue(asset.mu).TryPop(out var segmentMesh))
             {
                 if (asset.Prefab == null) continue;
                 segmentMesh = Instantiate(asset.Prefab);
                 segmentMesh.name = asset.mu;
+                segmentMesh.transform.NestToParent(anchor);
+                segmentMesh.transform.SetLayerRecursive(part.gameObject.layer);
+                rendererCache.UnionWith(segmentMesh.GetComponentsInChildren<Renderer>());
                 didInstantiateGO = true;
             }
 
             segmentMesh.SetActive(true);
-            segmentMesh.transform.NestToParent(anchor);
-            segmentMesh.transform.SetLayerRecursive(part.gameObject.layer);
             transformation.ApplyTo(segmentMesh);
 
             if (asset.materials.Contains(materialId))
@@ -56,24 +59,29 @@ public partial class ModuleAdaptiveTankBase
 
         foreach (var entry in segmentMeshCache)
         {
-            while (entry.Value.TryPop(out var segmentMesh)) Destroy(segmentMesh);
+            while (entry.Value.TryPop(out var segmentMesh))
+            {
+                foreach (var renderer in segmentMesh.GetComponentsInChildren<Renderer>())
+                    rendererCache.Remove(renderer);
+                Destroy(segmentMesh);
+            }
         }
 
         return didInstantiateGO;
     }
 
-    protected void RealizeGeometry()
+    protected void RealizeGeometry(bool isInitialize)
     {
-        var didInstantiateGO = RealizeGeometry(
+        var didInstantiateGO = RealizeStackIncremental(
             segmentStacks!.Skin,
-            segmentStacks.Diameter,
             SkinStackAnchorName,
-            skinLinkedMaterial);
-        didInstantiateGO |= RealizeGeometry(
+            skinLinkedMaterial,
+            isInitialize);
+        didInstantiateGO |= RealizeStackIncremental(
             segmentStacks.Core,
-            segmentStacks.Diameter,
             CoreStackAnchorName,
-            coreLinkedMaterial);
+            coreLinkedMaterial,
+            isInitialize);
 
         if (didInstantiateGO) part.ResetAllRendererCaches();
 
@@ -87,9 +95,6 @@ public partial class ModuleAdaptiveTankBase
         part.GetOrCreateAnchor(SkinStackAnchorName).localPosition =
             part.GetOrCreateAnchor(CoreStackAnchorName).localPosition =
                 Vector3.down * segmentStacks!.HalfHeight;
-        // TODO: skin transparency somehow?
-        // part.GetOrCreateAnchor(SkinStackAnchorName).localPosition +=
-        //     Vector3.forward * diameter * 1.5f;
     }
 
     public void ReStack(bool isInitialize)
@@ -111,7 +116,7 @@ public partial class ModuleAdaptiveTankBase
             MonoUtilities.RefreshPartContextWindow(part);
         }
 
-        RealizeGeometry();
+        RealizeGeometry(isInitialize);
         RecenterStack();
         UpdateAttachNodes();
         MoveSurfaceAttachedChildren(oldDiameter);
@@ -168,6 +173,31 @@ public partial class ModuleAdaptiveTankBase
             // TODO: take local geometry at position of attachment into account.
             // Current logic only works for cylindrical objects.
             // TODO: shift vertically on height change. This will depend on cap vs body.
+        }
+    }
+
+    #endregion
+
+    #region shader property management
+
+    private MaterialPropertyBlock? mpb;
+    private PartUtils.PartMPBProperties partMPBProps = new();
+
+    protected void RefreshMPB()
+    {
+        if (mpb == null) mpb = new MaterialPropertyBlock();
+
+        mpb.Clear();
+        part.ExtractMPBProperties(ref partMPBProps);
+        partMPBProps.WriteTo(ref mpb);
+
+        foreach (var kvp in stackRenderersCache)
+        {
+            var anchor = kvp.Key;
+            if (anchor.name == SkinStackAnchorName && transparentSkin)
+                mpb.SetFloat(PropertyIDs._Opacity, transparentSkinOpacity);
+            foreach (var renderer in kvp.Value) renderer.SetPropertyBlock(mpb);
+            mpb.SetFloat(PropertyIDs._Opacity, partMPBProps.Opacity);
         }
     }
 
