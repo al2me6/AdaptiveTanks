@@ -9,7 +9,7 @@ namespace AdaptiveTanks;
 public abstract class StyleDef : ConfigNodePersistenceBase, ILibraryLoad
 {
     [Persistent] public string name;
-    [Persistent] private string displayName = null;
+    [Persistent] protected string displayName = null;
 
     public IReadOnlyDictionary<SegmentRole, List<SegmentDef>> SegmentsByRole { get; private set; }
     public IReadOnlyList<LinkedMaterial> LinkedMaterials { get; private set; }
