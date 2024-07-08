@@ -6,8 +6,6 @@ using ROUtils.DataTypes;
 
 namespace AdaptiveTanks;
 
-#nullable enable
-
 public abstract class GeometryModel : ConfigNodePersistenceBase
 {
     private static readonly IReadOnlyDictionary<string, Type> subclasses = AssemblyLoader

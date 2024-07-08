@@ -4,8 +4,6 @@ using System.Collections.Generic;
 
 namespace AdaptiveTanks;
 
-#nullable enable
-
 public record SelectedSegments(
     SegmentDef Tank,
     SegmentDef TerminatorTop,

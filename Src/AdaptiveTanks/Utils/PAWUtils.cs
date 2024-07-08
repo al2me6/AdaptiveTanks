@@ -12,11 +12,8 @@ public static class PAWUtils
         field.uiControlEditor.onSymmetryFieldChanged += action;
     }
 
-    public static T AsEditor<T>(this BaseField field)
-        where T : UI_Control
-    {
-        return field.uiControlEditor as T;
-    }
+    public static T AsEditor<T>(this BaseField field) where T : UI_Control =>
+        (T)field.uiControlEditor;
 
     public static void SetMinMax(this UI_FloatEdit edit, float min, float max)
     {

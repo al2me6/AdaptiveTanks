@@ -14,6 +14,6 @@ public static class Itertools
         }
     }
 
-    public static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T> iter) where T : class =>
-        iter.Where(item => item != null);
+    public static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T?> iter) where T : class =>
+        iter.Where(item => item != null)!;
 }

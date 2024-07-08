@@ -19,7 +19,7 @@ public partial class ModuleAdaptiveTankBase
     public const string SkinStackAnchorName = "__ATSkinStack";
     public const string CoreStackAnchorName = "__ATCoreStack";
 
-    protected SegmentStacks segmentStacks;
+    protected SegmentStacks? segmentStacks;
 
     private static readonly Dictionary<string, List<GameObject>> segmentMeshCache = new();
 
@@ -65,7 +65,7 @@ public partial class ModuleAdaptiveTankBase
     protected void RealizeGeometry()
     {
         var didInstantiateGO = RealizeGeometry(
-            segmentStacks.Skin,
+            segmentStacks!.Skin,
             segmentStacks.Diameter,
             SkinStackAnchorName,
             skinLinkedMaterial);
@@ -86,7 +86,7 @@ public partial class ModuleAdaptiveTankBase
     {
         part.GetOrCreateAnchor(SkinStackAnchorName).localPosition =
             part.GetOrCreateAnchor(CoreStackAnchorName).localPosition =
-                Vector3.down * segmentStacks.HalfHeight;
+                Vector3.down * segmentStacks!.HalfHeight;
         // TODO: skin transparency somehow?
         // part.GetOrCreateAnchor(SkinStackAnchorName).localPosition +=
         //     Vector3.forward * diameter * 1.5f;
@@ -126,8 +126,8 @@ public partial class ModuleAdaptiveTankBase
 
     #region attach node management
 
-    protected AttachNode nodeTop;
-    protected AttachNode nodeBottom;
+    protected AttachNode nodeTop = null!;
+    protected AttachNode nodeBottom = null!;
     protected AttachNode nodeSurface => part.srfAttachNode;
 
     protected void FindStackAttachNodes()
@@ -141,7 +141,7 @@ public partial class ModuleAdaptiveTankBase
 
     protected void UpdateAttachNodes()
     {
-        var halfHeight = segmentStacks.HalfHeight;
+        var halfHeight = segmentStacks!.HalfHeight;
         nodeTop.MoveTo(Vector3.up * halfHeight);
         nodeBottom.MoveTo(Vector3.down * halfHeight);
         nodeSurface.MoveTo(Vector3.right * diameter * 0.5f);

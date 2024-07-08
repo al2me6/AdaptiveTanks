@@ -2,8 +2,6 @@ using AdaptiveTanks.Utils;
 
 namespace AdaptiveTanks;
 
-#nullable enable
-
 public static class SegmentStacker
 {
     // TODO: do less work here?

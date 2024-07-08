@@ -8,8 +8,6 @@ using UnityEngine;
 
 namespace AdaptiveTanks;
 
-#nullable enable
-
 [LibraryLoad("AT_SEGMENT")]
 public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
 {

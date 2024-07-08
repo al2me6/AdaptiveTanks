@@ -8,7 +8,7 @@ namespace AdaptiveTanks;
 
 public record StretchedAsset
 {
-    public Asset Asset { get; init; }
+    public required Asset Asset { get; init; }
     public float Stretch { get; set; } = 1f;
 
     public float StretchedAspectRatio => Asset.AspectRatio * Stretch;

@@ -23,8 +23,8 @@ public partial class ModuleAdaptiveTankBase
 
     #region non-serializable configuration
 
-    public string[] skinStyles;
-    public string[] coreStyles;
+    public string[] skinStyles = null!;
+    public string[] coreStyles = null!;
 
     public const string SkinStyleNodeName = "SkinStyle";
     public const string CoreStyleNodeName = "CoreStyle";
@@ -70,41 +70,41 @@ public partial class ModuleAdaptiveTankBase
 
     #region styling
 
-    public string[] availableCoreStyles;
+    public string[] availableCoreStyles = null!;
 
     [KSPField(isPersistant = true, guiName = "Skin Style")] [UI_ChooseOption]
-    public string skinStyle;
+    public string skinStyle = "";
 
     [KSPField(isPersistant = true, guiName = "Core Style")] [UI_ChooseOption]
-    public string coreStyle;
+    public string coreStyle = "";
 
     [KSPField(isPersistant = true, guiName = "Skin Nose")] [UI_ChooseOption]
-    public string skinNoseVariant;
+    public string skinNoseVariant = "";
 
     [KSPField(isPersistant = true, guiName = "Core Nose")] [UI_ChooseOption]
-    public string coreNoseVariant;
+    public string coreNoseVariant = "";
 
     [KSPField(isPersistant = true, guiName = "Nose Alignment")]
     [UI_Toggle(enabledText = "staggered", disabledText = "flushed")]
     public bool noseAlignInteriorEnd;
 
     [KSPField(isPersistant = true, guiName = "Skin Body")] [UI_ChooseOption]
-    public string skinBodyVariant;
+    public string skinBodyVariant = "";
 
     [KSPField(isPersistant = true, guiName = "Core Body")] [UI_ChooseOption]
-    public string coreBodyVariant;
+    public string coreBodyVariant = "";
 
     [KSPField(isPersistant = true, guiName = "Skin Intertank")] [UI_ChooseOption]
-    public string skinIntertankVariant;
+    public string skinIntertankVariant = "";
 
     [KSPField(isPersistant = true, guiName = "Core Intertank")] [UI_ChooseOption]
-    public string coreIntertankVariant;
+    public string coreIntertankVariant = "";
 
     [KSPField(isPersistant = true, guiName = "Skin Mount")] [UI_ChooseOption]
-    public string skinMountVariant;
+    public string skinMountVariant = "";
 
     [KSPField(isPersistant = true, guiName = "Core Mount")] [UI_ChooseOption]
-    public string coreMountVariant;
+    public string coreMountVariant = "";
 
     [KSPField(isPersistant = true, guiName = "Mount Alignment")]
     [UI_Toggle(enabledText = "staggered", disabledText = "flushed")]
@@ -119,10 +119,10 @@ public partial class ModuleAdaptiveTankBase
     public bool useIntertank;
 
     [KSPField(isPersistant = true, guiName = "Skin Paint")] [UI_ChooseOption]
-    public string skinLinkedMaterial;
+    public string skinLinkedMaterial = "";
 
     [KSPField(isPersistant = true, guiName = "Core Paint")] [UI_ChooseOption]
-    public string coreLinkedMaterial;
+    public string coreLinkedMaterial = "";
 
     #endregion
 }

@@ -6,8 +6,6 @@ using AdaptiveTanks.Utils;
 
 namespace AdaptiveTanks;
 
-#nullable enable
-
 /// <summary>
 /// Register the annotated class to be loaded by the <see cref="Library"/>.
 /// The class must implement <see cref="ILibraryLoad"/>.

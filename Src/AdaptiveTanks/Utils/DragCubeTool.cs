@@ -5,7 +5,7 @@ namespace ProceduralTools;
 
 public class DragCubeTool : MonoBehaviour
 {
-    public Part part;
+    public Part part = null!;
 
     public static DragCubeTool UpdateDragCubes(Part p, bool immediate = false)
     {

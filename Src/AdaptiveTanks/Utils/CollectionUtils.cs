@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace AdaptiveTanks.Utils;
 
@@ -28,7 +29,7 @@ public static class CollectionUtils
         return value;
     }
 
-    public static bool TryPop<T>(this List<T> list, out T item)
+    public static bool TryPop<T>(this List<T> list, [NotNullWhen(true)] out T? item)
     {
         var lastIdx = list.Count - 1;
 
@@ -38,7 +39,7 @@ public static class CollectionUtils
             return false;
         }
 
-        item = list[lastIdx];
+        item = list[lastIdx]!;
         list.RemoveAt(lastIdx);
         return true;
     }

@@ -4,7 +4,7 @@ namespace AdaptiveTanks.Utils;
 
 public static class ConfigNodeUtils
 {
-    public static IEnumerable<T> LoadAllFromNodes<T>(this ConfigNode node, string nodeName = null)
+    public static IEnumerable<T> LoadAllFromNodes<T>(this ConfigNode node, string? nodeName = null)
         where T : IConfigNode, new()
     {
         if (string.IsNullOrEmpty(nodeName)) nodeName = typeof(T).Name;

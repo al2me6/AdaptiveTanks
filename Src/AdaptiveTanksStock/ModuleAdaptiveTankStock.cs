@@ -10,7 +10,7 @@ public class ModuleAdaptiveTankStock : ModuleAdaptiveTankBase
 {
     #region fields
 
-    [KSPField] public string B9PSPropellantModuleID;
+    [KSPField] public string B9PSPropellantModuleID = null!;
 
     [KSPField] public float B9PSPropUnitsPerL = 0.2f; // Why does this exist...
     [KSPField] public float tankUtilization = 0.85f;
@@ -19,7 +19,7 @@ public class ModuleAdaptiveTankStock : ModuleAdaptiveTankBase
 
     #region configuration
 
-    private ModuleB9PartSwitch B9PSModule;
+    private ModuleB9PartSwitch B9PSModule = null!;
 
     protected override void InitializeConfiguration()
     {

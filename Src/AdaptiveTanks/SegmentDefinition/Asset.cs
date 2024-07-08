@@ -16,8 +16,8 @@ public class Asset : ConfigNodePersistenceBase
 
     public NamedCollection<AssetMaterial> materials = [];
 
-    public GameObject Prefab { get; private set; }
-    public Material PrefabMaterial { get; private set; }
+    public GameObject? Prefab { get; private set; }
+    public Material? PrefabMaterial { get; private set; }
 
     public override void Load(ConfigNode node)
     {
@@ -25,7 +25,7 @@ public class Asset : ConfigNodePersistenceBase
 
         foreach (var material in node.LoadAllFromNodes<AssetMaterial>(nodeName: "Material"))
         {
-            if (material.LinkId == null || material.Def == null)
+            if (!Library<MaterialDef>.Contains(material.defName))
             {
                 Debug.LogError($"asset `{mu}`: material must link to valid `MaterialDef`");
                 continue;
@@ -52,7 +52,7 @@ public class Asset : ConfigNodePersistenceBase
         foreach (var material in materials) material.Compile(this);
     }
 
-    public SegmentDef Segment { get; internal set; }
+    public SegmentDef Segment { get; internal set; } = null!;
 
     public float NativeHeight => Mathf.Abs(nativeBaseline.y - nativeBaseline.x);
     public float AspectRatio => NativeHeight / nativeDiameter;

@@ -6,15 +6,15 @@ namespace AdaptiveTanks.SegmentDefinition;
 
 public class AssetMaterial : ConfigNodePersistenceBase, IItemName
 {
-    [Persistent(name = "def")] public string defName;
-    [Persistent] private string linkId = null;
+    [Persistent(name = "def")] public string defName = null!;
+    [Persistent] private string? linkId = null;
     public string LinkId => linkId ?? defName;
 
     public string ItemName() => LinkId;
 
-    public MaterialDef Def => Library<MaterialDef>.GetOrNull(defName);
+    public MaterialDef Def => Library<MaterialDef>.Get(defName);
 
-    public Material OverrideMaterial { get; private set; } = null;
+    public Material? OverrideMaterial { get; private set; } = null;
 
     internal void Compile(Asset asset)
     {

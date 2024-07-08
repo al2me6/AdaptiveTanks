@@ -140,10 +140,10 @@ public partial class ModuleAdaptiveTankBase
         terminatorBottom: skinMountVariant,
         intertank: IntertankDecision() ? skinIntertankVariant : null,
         tankCapInternalTop: TerminatorIsAccessory(Cap.Top) // TODO select
-            ? SkinStyle.SegmentsByRole[Role.TankCapInternalTop].First().name
+            ? SkinStyle.Segments[Role.TankCapInternalTop].First().name
             : null,
         tankCapInternalBottom: TerminatorIsAccessory(Cap.Bottom)
-            ? SkinStyle.SegmentsByRole[Role.TankCapInternalBottom].First().name
+            ? SkinStyle.Segments[Role.TankCapInternalBottom].First().name
             : null,
         alignTop: Alignment(Cap.Top),
         alignBottom: Alignment(Cap.Bottom));
@@ -154,10 +154,10 @@ public partial class ModuleAdaptiveTankBase
         terminatorBottom: coreMountVariant,
         intertank: IntertankDecision() ? coreIntertankVariant : null,
         tankCapInternalTop: TerminatorIsAccessory(Cap.Top) // TODO select
-            ? CoreStyle.SegmentsByRole[Role.TankCapInternalTop].First().name
+            ? CoreStyle.Segments[Role.TankCapInternalTop].First().name
             : null,
         tankCapInternalBottom: TerminatorIsAccessory(Cap.Bottom)
-            ? CoreStyle.SegmentsByRole[Role.TankCapInternalBottom].First().name
+            ? CoreStyle.Segments[Role.TankCapInternalBottom].First().name
             : null,
         alignTop: Alignment(Cap.Top),
         alignBottom: Alignment(Cap.Bottom));
@@ -325,7 +325,7 @@ public partial class ModuleAdaptiveTankBase
     protected void UpdateAvailableVariant(Layer layer, Role role)
     {
         var field = Fields[SegmentFieldName(layer, role)];
-        var variants = Style(layer).SegmentsByRole[role];
+        var variants = Style(layer).Segments[role];
         ref var selection = ref SegmentName(layer, role);
 
         if (layer == Layer.Core

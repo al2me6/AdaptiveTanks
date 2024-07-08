@@ -6,7 +6,6 @@ using UnityEngine;
 
 namespace AdaptiveTanks;
 
-#nullable enable
 using Role = SegmentRole;
 using Alignment = SegmentAlignment;
 using static ProtoSegment;
@@ -321,7 +320,7 @@ internal class ProtoSegmentStack
                     // Note that for a bottom cap, the padding is below the segment.
                     var isBottom = position == CapPosition.Bottom;
                     if (isBottom) baseline += padding;
-                    stack.Add(role, asset, baseline, forceStretch);
+                    stack.Add(role, asset!, baseline, forceStretch);
                     if (!isBottom) baseline += padding;
                     baseline += asset!.AspectRatio * forceStretch;
                     break;
@@ -330,7 +329,7 @@ internal class ProtoSegmentStack
                     Role: var role, Asset: var asset,
                     AdjustedAspectRatio: var adjustedAspect, ForceStretch: var forceStretch
                 }:
-                    stack.Add(role, asset, baseline, forceStretch);
+                    stack.Add(role, asset!, baseline, forceStretch);
                     baseline += adjustedAspect;
                     break;
                 case Flex { Solution: var bodySolution }:

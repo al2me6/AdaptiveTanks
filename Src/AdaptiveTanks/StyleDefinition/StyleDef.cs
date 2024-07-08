@@ -8,34 +8,33 @@ namespace AdaptiveTanks;
 
 public abstract class StyleDef : ConfigNodePersistenceBase, ILibraryLoad
 {
-    [Persistent] public string name;
-    [Persistent] protected string displayName = null;
+    [Persistent] public string name = null!;
+    [Persistent] protected string? displayName = null;
 
-    public IReadOnlyDictionary<SegmentRole, List<SegmentDef>> SegmentsByRole { get; private set; }
-    public IReadOnlyList<LinkedMaterial> LinkedMaterials { get; private set; }
+    public Dictionary<SegmentRole, List<SegmentDef>> Segments { get; private set; } = null!;
+    public List<LinkedMaterial> LinkedMaterials { get; } = [];
 
     public override void Load(ConfigNode node)
     {
         base.Load(node);
         var segments = Library<SegmentDef>.GetAll(LoadSegments(node)).ToList();
 
-        var positionalRoles = Enum.GetValues(typeof(SegmentRole));
-        SegmentsByRole = positionalRoles
+        var roles = Enum.GetValues(typeof(SegmentRole));
+        Segments = roles
             .Cast<SegmentRole>()
             .ToDictionary(role => role, _ => new List<SegmentDef>());
         foreach (var segmentDef in segments)
         {
-            foreach (var positionalRole in positionalRoles.Cast<SegmentRole>())
+            foreach (var role in roles.Cast<SegmentRole>())
             {
-                if (segmentDef.Supports(positionalRole))
-                    SegmentsByRole[positionalRole].Add(segmentDef);
+                if (segmentDef.Supports(role)) Segments[role].Add(segmentDef);
             }
         }
 
         Debug.Log($"style {name}");
         Debug.Log($"\tsegments {string.Join(", ", segments)}");
 
-        HashSet<string> commonLinkIds = null;
+        HashSet<string>? commonLinkIds = null;
         foreach (var segment in segments)
         {
             foreach (var asset in segment.assets)
@@ -46,14 +45,11 @@ public abstract class StyleDef : ConfigNodePersistenceBase, ILibraryLoad
             }
         }
 
-        List<LinkedMaterial> linkedMats = [];
         foreach (var material in segments[0].assets[0].materials)
         {
             if (!commonLinkIds!.Contains(material.LinkId)) continue;
-            linkedMats.Add(new LinkedMaterial(material.LinkId, material.Def.DisplayName));
+            LinkedMaterials.Add(new LinkedMaterial(material.LinkId, material.Def.DisplayName));
         }
-
-        LinkedMaterials = linkedMats;
     }
 
     protected virtual IEnumerable<string> LoadSegments(ConfigNode node) =>
@@ -62,14 +58,14 @@ public abstract class StyleDef : ConfigNodePersistenceBase, ILibraryLoad
     public string ItemName() => name;
     public string DisplayName => displayName ?? name;
 
-    public bool SupportsIntertank => SegmentsByRole[SegmentRole.Intertank].Count > 0;
+    public bool SupportsIntertank => Segments[SegmentRole.Intertank].Count > 0;
 }
 
 [LibraryLoad("AT_SKIN_STYLE", loadOrder: 2)]
 public class StyleDefSkin : StyleDef
 {
-    public string[] allowCoreStyles;
-    public string[] blockCoreStyles;
+    public string[] allowCoreStyles = null!;
+    public string[] blockCoreStyles = null!;
 
     public override void Load(ConfigNode node)
     {
