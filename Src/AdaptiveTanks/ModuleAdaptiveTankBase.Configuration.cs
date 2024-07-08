@@ -419,7 +419,7 @@ public partial class ModuleAdaptiveTankBase
     protected void UpdateAvailableLinkedMaterials(Layer layer)
     {
         var field = Fields[LinkedMaterialFieldName(layer)];
-        var materials = Style(layer).linkedMaterials;
+        var materials = Style(layer).LinkedMaterials;
         ref var materialId = ref LinkedMaterial(layer);
 
         if (materials.IsEmpty())
@@ -431,7 +431,7 @@ public partial class ModuleAdaptiveTankBase
 
         UpdateUIChooseOption(
             field, ref materialId,
-            materials.Select(mat => mat.id), materials.Select(mat => mat.DisplayName));
+            materials.Select(mat => mat.Id), materials.Select(mat => mat.DisplayName));
     }
 
     #endregion

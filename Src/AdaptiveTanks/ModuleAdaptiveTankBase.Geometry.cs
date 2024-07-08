@@ -50,7 +50,8 @@ public partial class ModuleAdaptiveTankBase
             segmentMesh.transform.SetLayerRecursive(part.gameObject.layer);
             transformation.ApplyTo(segmentMesh);
 
-            if (asset.Materials.TryGetValue(materialId, out var mat)) mat.ApplyTo(segmentMesh);
+            if (asset.materials.Contains(materialId))
+                asset.materials[materialId].ApplyTo(segmentMesh);
         }
 
         foreach (var entry in segmentMeshCache)

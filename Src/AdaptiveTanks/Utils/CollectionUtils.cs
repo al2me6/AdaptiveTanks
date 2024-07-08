@@ -1,11 +1,21 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace AdaptiveTanks.Utils;
 
+public interface IItemName
+{
+    public string ItemName();
+}
+
+public class NamedCollection<T> : KeyedCollection<string, T> where T : IItemName
+{
+    protected override string GetKeyForItem(T item) => item.ItemName();
+}
+
 public static class CollectionUtils
 {
-    public static bool IsEmpty<C>(this C coll) where C : ICollection => coll.Count == 0;
+    public static bool IsEmpty<T>(this IReadOnlyCollection<T> coll) => coll.Count == 0;
 
     public static V GetOrCreateValue<K, V>(this Dictionary<K, V> dict, K key) where V : new()
     {

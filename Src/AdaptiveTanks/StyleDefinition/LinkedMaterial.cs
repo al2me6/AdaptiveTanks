@@ -1,11 +1,8 @@
-﻿using ROUtils.DataTypes;
+﻿using AdaptiveTanks.Utils;
 
 namespace AdaptiveTanks;
 
-public class LinkedMaterial : ConfigNodePersistenceBase
+public record LinkedMaterial(string Id, string DisplayName) : IItemName
 {
-    [Persistent] public string id;
-    [Persistent] private string displayName = null;
-
-    public string DisplayName => displayName ?? id;
+    public string ItemName() => Id;
 }

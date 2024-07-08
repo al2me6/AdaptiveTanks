@@ -1,13 +1,16 @@
-﻿using ROUtils.DataTypes;
+﻿using AdaptiveTanks.Utils;
+using ROUtils.DataTypes;
 using UnityEngine;
 
 namespace AdaptiveTanks.SegmentDefinition;
 
-public class AssetMaterial : ConfigNodePersistenceBase
+public class AssetMaterial : ConfigNodePersistenceBase, IItemName
 {
     [Persistent(name = "def")] public string defName;
     [Persistent] private string linkId = null;
     public string LinkId => linkId ?? defName;
+
+    public string ItemName() => LinkId;
 
     public MaterialDef Def => Library<MaterialDef>.GetOrNull(defName);
 

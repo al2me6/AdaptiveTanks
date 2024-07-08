@@ -10,20 +10,20 @@ public abstract class StyleDef : ConfigNodePersistenceBase, ILibraryLoad
 {
     [Persistent] public string name;
     [Persistent] private string displayName = null;
-    public LinkedMaterial[] linkedMaterials;
 
     public IReadOnlyDictionary<SegmentRole, List<SegmentDef>> SegmentsByRole { get; private set; }
+    public IReadOnlyList<LinkedMaterial> LinkedMaterials { get; private set; }
 
     public override void Load(ConfigNode node)
     {
         base.Load(node);
-        var segments = LoadSegments(node).ToList();
+        var segments = Library<SegmentDef>.GetAll(LoadSegments(node)).ToList();
 
         var positionalRoles = Enum.GetValues(typeof(SegmentRole));
         SegmentsByRole = positionalRoles
             .Cast<SegmentRole>()
             .ToDictionary(role => role, _ => new List<SegmentDef>());
-        foreach (var segmentDef in Library<SegmentDef>.GetAll(segments))
+        foreach (var segmentDef in segments)
         {
             foreach (var positionalRole in positionalRoles.Cast<SegmentRole>())
             {
@@ -35,7 +35,25 @@ public abstract class StyleDef : ConfigNodePersistenceBase, ILibraryLoad
         Debug.Log($"style {name}");
         Debug.Log($"\tsegments {string.Join(", ", segments)}");
 
-        linkedMaterials = node.LoadAllFromNodes<LinkedMaterial>().ToArray();
+        HashSet<string> commonLinkIds = null;
+        foreach (var segment in segments)
+        {
+            foreach (var asset in segment.assets)
+            {
+                var assetMaterials = asset.materials.Select(mat => mat.LinkId);
+                if (commonLinkIds == null) commonLinkIds = [..assetMaterials];
+                else commonLinkIds.IntersectWith(assetMaterials);
+            }
+        }
+
+        List<LinkedMaterial> linkedMats = [];
+        foreach (var material in segments[0].assets[0].materials)
+        {
+            if (!commonLinkIds!.Contains(material.LinkId)) continue;
+            linkedMats.Add(new LinkedMaterial(material.LinkId, material.Def.DisplayName));
+        }
+
+        LinkedMaterials = linkedMats;
     }
 
     protected virtual IEnumerable<string> LoadSegments(ConfigNode node) =>

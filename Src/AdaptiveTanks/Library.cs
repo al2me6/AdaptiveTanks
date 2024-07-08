@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using AdaptiveTanks.Utils;
 
 namespace AdaptiveTanks;
 
@@ -19,12 +20,9 @@ public class LibraryLoadAttribute(string nodeName, int loadOrder = 0) : Attribut
 {
     public readonly string NodeName = nodeName;
     public readonly int LoadOrder = loadOrder;
-};
-
-public interface ILibraryLoad : IConfigNode
-{
-    public string ItemName();
 }
+
+public interface ILibraryLoad : IItemName, IConfigNode;
 
 public static class LibraryLoader
 {

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using AdaptiveTanks.SegmentDefinition;
 using AdaptiveTanks.Utils;
 using ROUtils.DataTypes;
@@ -15,7 +14,7 @@ public class Asset : ConfigNodePersistenceBase
 
     [Persistent] public Vector2 diameterRange = new(0f, float.PositiveInfinity);
 
-    public Dictionary<string, AssetMaterial> Materials = new();
+    public NamedCollection<AssetMaterial> materials = [];
 
     public GameObject Prefab { get; private set; }
     public Material PrefabMaterial { get; private set; }
@@ -32,13 +31,13 @@ public class Asset : ConfigNodePersistenceBase
                 continue;
             }
 
-            if (Materials.ContainsKey(material.LinkId))
+            if (materials.Contains(material.LinkId))
             {
                 Debug.LogError($"asset `{mu}`: material must have unique `linkId`");
                 continue;
             }
 
-            Materials[material.LinkId] = material;
+            materials.Add(material);
         }
 
         Prefab = GameDatabase.Instance.GetModelPrefab(mu);
@@ -50,7 +49,7 @@ public class Asset : ConfigNodePersistenceBase
 
         PrefabMaterial = Prefab.GetComponentInChildren<Renderer>()?.sharedMaterial;
 
-        foreach (var material in Materials.Values) material.Compile(this);
+        foreach (var material in materials) material.Compile(this);
     }
 
     public SegmentDef Segment { get; internal set; }
