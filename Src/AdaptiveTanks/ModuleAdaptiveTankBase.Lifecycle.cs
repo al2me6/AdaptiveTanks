@@ -26,6 +26,8 @@ public abstract partial class ModuleAdaptiveTankBase : PartModule
 
     public override void OnStart(StartState state)
     {
+        // OnInitialize is not always called. This is a back-up.
+        InitializeConfigurationAndModel();
         InitializeEditorPAW();
     }
 
