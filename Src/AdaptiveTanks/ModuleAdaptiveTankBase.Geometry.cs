@@ -23,80 +23,6 @@ public partial class ModuleAdaptiveTankBase
 
     protected readonly Dictionary<Transform, HashSet<Renderer>> stackRenderersCache = new();
 
-    private readonly Dictionary<string, List<GameObject>> segmentMeshCache = new();
-
-    protected bool RealizeStackIncremental(
-        SegmentStack stack, string anchorName, string materialId, bool fullRebuild)
-    {
-        var anchor = part.GetOrCreateAnchor(anchorName);
-        var rendererCache = stackRenderersCache.GetOrCreateValue(anchor);
-
-        foreach (Transform segmentMesh in anchor)
-            segmentMeshCache.GetOrCreateValue(segmentMesh.name).Add(segmentMesh.gameObject);
-
-        var didInstantiateGO = false;
-
-        foreach (var (asset, transformation) in stack.IterSegments(diameter))
-        {
-            if (fullRebuild ||
-                !segmentMeshCache.GetOrCreateValue(asset.mu).TryPop(out var segmentMesh))
-            {
-                if (asset.Prefab == null) continue;
-                segmentMesh = Instantiate(asset.Prefab);
-                segmentMesh.name = asset.mu;
-                segmentMesh.transform.NestToParent(anchor);
-                segmentMesh.transform.SetLayerRecursive(part.gameObject.layer);
-                rendererCache.UnionWith(segmentMesh.GetComponentsInChildren<Renderer>());
-                didInstantiateGO = true;
-            }
-
-            segmentMesh.SetActive(true);
-            transformation.ApplyTo(segmentMesh);
-
-            if (asset.materials.Contains(materialId))
-                asset.materials[materialId].ApplyTo(segmentMesh);
-        }
-
-        foreach (var entry in segmentMeshCache)
-        {
-            while (entry.Value.TryPop(out var segmentMesh))
-            {
-                foreach (var renderer in segmentMesh.GetComponentsInChildren<Renderer>())
-                    rendererCache.Remove(renderer);
-                Destroy(segmentMesh);
-            }
-        }
-
-        return didInstantiateGO;
-    }
-
-    protected void RealizeGeometry(bool isInitialize)
-    {
-        var didInstantiateGO = RealizeStackIncremental(
-            segmentStacks!.Skin,
-            SkinStackAnchorName,
-            skinLinkedMaterial,
-            isInitialize);
-        didInstantiateGO |= RealizeStackIncremental(
-            segmentStacks.Core,
-            CoreStackAnchorName,
-            coreLinkedMaterial,
-            isInitialize);
-
-        if (didInstantiateGO) part.ResetAllRendererCaches();
-
-        var skinDistortion = segmentStacks.Skin.WorstDistortion();
-        var coreDistortion = segmentStacks.Core.WorstDistortion();
-        sWorstDistortion = $"skin {skinDistortion:P1}; core {coreDistortion:P1}";
-    }
-
-    protected void RecenterStack()
-    {
-        part.GetOrCreateAnchor(SkinStackAnchorName).localPosition =
-            part.GetOrCreateAnchor(CoreStackAnchorName).localPosition =
-                Vector3.down * segmentStacks!.HalfHeight;
-    }
-
     public void ReStack(bool isInitialize)
     {
         var oldDiameter = segmentStacks?.Diameter;
@@ -125,6 +51,82 @@ public partial class ModuleAdaptiveTankBase
             DragCubeTool.UpdateDragCubes(part);
 
         UpdateVolume(isInitialize);
+    }
+
+    protected void RealizeGeometry(bool isInitialize)
+    {
+        var didInstantiateGO = RealizeStackIncremental(
+            segmentStacks!.Skin,
+            SkinStackAnchorName,
+            skinLinkedMaterial,
+            isInitialize);
+        didInstantiateGO |= RealizeStackIncremental(
+            segmentStacks.Core,
+            CoreStackAnchorName,
+            coreLinkedMaterial,
+            isInitialize);
+
+        if (didInstantiateGO) part.ResetAllRendererCaches();
+
+        var skinDistortion = segmentStacks.Skin.WorstDistortion();
+        var coreDistortion = segmentStacks.Core.WorstDistortion();
+        sWorstDistortion = $"skin {skinDistortion:P1}; core {coreDistortion:P1}";
+    }
+
+    private readonly Dictionary<string, List<GameObject>> _existingMeshes = new();
+
+    protected bool RealizeStackIncremental(
+        SegmentStack stack, string anchorName, string materialId, bool fullRebuild)
+    {
+        var anchor = part.GetOrCreateAnchor(anchorName);
+        var rendererCache = stackRenderersCache.GetOrCreateValue(anchor);
+
+        foreach (Transform mesh in anchor)
+            _existingMeshes.GetOrCreateValue(mesh.name).Add(mesh.gameObject);
+
+        var didInstantiateGO = false;
+
+        foreach (var (asset, transformation) in stack.IterSegments(diameter))
+        {
+            if (fullRebuild || !_existingMeshes.GetOrCreateValue(asset.mu).TryPop(out var mesh))
+            {
+                if (asset.Prefab == null) continue;
+
+                mesh = Instantiate(asset.Prefab);
+                mesh.name = asset.mu;
+
+                mesh.SetActive(true);
+                mesh.transform.NestToParent(anchor);
+                mesh.transform.SetLayerRecursive(part.gameObject.layer);
+
+                rendererCache.UnionWith(mesh.GetComponentsInChildren<Renderer>());
+
+                didInstantiateGO = true;
+            }
+
+            transformation.ApplyTo(mesh);
+
+            if (asset.materials.Contains(materialId)) asset.materials[materialId].ApplyTo(mesh);
+        }
+
+        foreach (var entry in _existingMeshes)
+        {
+            while (entry.Value.TryPop(out var mesh))
+            {
+                foreach (var renderer in mesh.GetComponentsInChildren<Renderer>())
+                    rendererCache.Remove(renderer);
+                Destroy(mesh);
+            }
+        }
+
+        return didInstantiateGO;
+    }
+
+    protected void RecenterStack()
+    {
+        part.GetOrCreateAnchor(SkinStackAnchorName).localPosition =
+            part.GetOrCreateAnchor(CoreStackAnchorName).localPosition =
+                Vector3.down * segmentStacks!.HalfHeight;
     }
 
     #endregion
