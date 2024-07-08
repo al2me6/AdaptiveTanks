@@ -41,8 +41,9 @@ public class AssetMaterial : ConfigNodePersistenceBase, IItemName
                 continue;
             }
 
-            var nrmPropertyName = Library<NormalMapShaderProperty>.GetOrNull(propertyName);
-            var isNormalMap = propertyName == nrmPropertyName?.property;
+            var nrmPropertyName = Library<NormalMapShaderProperty>
+                .GetOrNull(OverrideMaterial.shader.name)?.property ?? "_BumpMap";
+            var isNormalMap = propertyName == nrmPropertyName;
             OverrideMaterial.SetTexture(
                 propertyName, isNormalMap ? texInfo.normalMap : texInfo.texture);
         }
