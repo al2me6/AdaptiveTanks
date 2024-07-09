@@ -32,18 +32,18 @@ internal abstract record ProtoSegment
     /// - `Assets` are all from the same `SegmentDef`.
     internal record Flex(Asset[] Assets, float VolumeFraction) : ProtoSegment
     {
-        internal const float Tolerance = 5e-3f;
-
         internal Flex? Prev { get; set; } = null;
         internal Flex? Next { get; set; } = null;
         internal float AspectRatio { get; set; } = 0f;
         internal BodySolution? Solution { get; set; } = null;
         internal SegmentDef Segment => Assets[0].Segment;
 
-        internal bool AspectRatioIsEmpty => Mathf.Abs(AspectRatio - 0f) < Tolerance;
+        internal bool AspectRatioIsEmpty =>
+            MathUtils.ApproxEqAbsolute(AspectRatio, 0f, SegmentStacker.Tolerance);
 
         internal bool AspectRatioIsValid =>
-            AspectRatioIsEmpty || Segment.minimumTankAspectRatio < AspectRatio + Tolerance;
+            AspectRatioIsEmpty ||
+            Segment.minimumTankAspectRatio < AspectRatio + SegmentStacker.Tolerance;
 
         private bool ModifyAspect(float shift)
         {
@@ -260,7 +260,8 @@ internal class ProtoSegmentStack
         // This will generally only occur when strict alignment (or alignInteriorEnd) is enabled
         // on both ends. Attempting to negotiate collapse when the ends are staggered will only
         // lead to pain and suffering.
-        if (MathUtils.ApproxEqAbsolute(skin.AspectRatio, core.AspectRatio, Flex.Tolerance))
+        if (MathUtils
+            .ApproxEqAbsolute(skin.AspectRatio, core.AspectRatio, SegmentStacker.Tolerance))
             shift = MathUtils.MinByMagnitude(shift, -skin.AspectRatio);
 
         // Note that a shift is always applied such that

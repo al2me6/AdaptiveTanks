@@ -36,7 +36,7 @@ public partial class ModuleAdaptiveTankBase
             maxIntertankVolumetricDeviation);
 
         var solutionHeight = segmentStacks.Height;
-        if (!Mathf.Approximately(height, solutionHeight))
+        if (!MathUtils.ApproxEqAbsolute(height, solutionHeight, SegmentStacker.Tolerance))
         {
             Debug.LogError($"solution height ({solutionHeight}) differs from target ({height})");
             height = solutionHeight;

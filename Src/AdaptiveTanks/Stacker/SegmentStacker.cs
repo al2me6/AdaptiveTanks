@@ -2,6 +2,8 @@ namespace AdaptiveTanks;
 
 public static class SegmentStacker
 {
+    public const float Tolerance = 5e-3f;
+
     // TODO: do less work here?
     // But most of the algorithm still needs to run due to negotiation.
     public static float MinHeight(float diameter, SelectedSegments skin, SelectedSegments core) =>
