@@ -19,17 +19,19 @@ public static class AttachNodeUtils
     /// This method will keep the transform of the part fixed in world space, if it is itself
     /// stack-attached.
     /// </summary>
-    public static void MoveTo(this AttachNode node, Vector3 dest)
+    public static void MoveTo(this AttachNode node, Vector3 dest, bool pushParts)
     {
         var localDelta = dest - node.position;
         if (localDelta == Vector3.zero) return;
 
         node.position = node.originalPosition = dest;
 
+        if (!pushParts) return;
+
         var attachedPart = node.attachedPart;
         if (attachedPart == null) return;
 
-        Debug.Log($"`{node.id}` attached to {attachedPart.name}[{attachedPart.persistentId}]");
+        // Debug.Log($"`{node.id}` attached to {attachedPart.name}[{attachedPart.persistentId}]");
 
         var part = node.owner;
         var worldDelta = part.transform.TransformDirection(localDelta);

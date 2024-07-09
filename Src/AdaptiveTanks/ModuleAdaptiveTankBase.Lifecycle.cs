@@ -22,11 +22,13 @@ public abstract partial class ModuleAdaptiveTankBase : PartModule
         return base.GetInfo();
     }
 
+    // Called when dropping a new part in the editor and when loading a `ShipConstruct`.
+    // In the latter case, we must initialize here to provide mass/cost info.
     public override void OnInitialize() => InitializeConfigurationAndModel();
 
     public override void OnStart(StartState state)
     {
-        // OnInitialize is not always called. This is a back-up.
+        // OnInitialize is not called when unpacking an existing vessel. Initialize here instead.
         InitializeConfigurationAndModel();
         InitializeEditorPAW();
     }

@@ -42,10 +42,10 @@ public partial class ModuleAdaptiveTankBase
             MonoUtilities.RefreshPartContextWindow(part);
         }
 
-        RealizeGeometry(isInitialize);
+        RealizeGeometry(fullRebuild: isInitialize);
         RecenterStack();
-        UpdateAttachNodes();
-        MoveSurfaceAttachedChildren(oldDiameter);
+        UpdateAttachNodes(pushParts: !isInitialize);
+        if (!isInitialize) MoveSurfaceAttachedChildren(oldDiameter);
 
         if (HighLogic.LoadedSceneIsEditor || HighLogic.LoadedSceneIsFlight)
             DragCubeTool.UpdateDragCubes(part);
@@ -53,18 +53,18 @@ public partial class ModuleAdaptiveTankBase
         UpdateVolume(isInitialize);
     }
 
-    protected void RealizeGeometry(bool isInitialize)
+    protected void RealizeGeometry(bool fullRebuild)
     {
         var didInstantiateGO = RealizeStackIncremental(
             segmentStacks!.Skin,
             SkinStackAnchorName,
             skinLinkedMaterial,
-            isInitialize);
+            fullRebuild);
         didInstantiateGO |= RealizeStackIncremental(
             segmentStacks.Core,
             CoreStackAnchorName,
             coreLinkedMaterial,
-            isInitialize);
+            fullRebuild);
 
         if (didInstantiateGO) part.ResetAllRendererCaches();
 
@@ -146,12 +146,12 @@ public partial class ModuleAdaptiveTankBase
     protected int CalculateAttachNodeSize() =>
         Math.Min((int)(diameter / attachNodeSizeIncrementFactor), maxAttachNodeSize);
 
-    protected void UpdateAttachNodes()
+    protected void UpdateAttachNodes(bool pushParts)
     {
         var halfHeight = segmentStacks!.HalfHeight;
-        nodeTop.MoveTo(Vector3.up * halfHeight);
-        nodeBottom.MoveTo(Vector3.down * halfHeight);
-        nodeSurface.MoveTo(Vector3.right * diameter * 0.5f);
+        nodeTop.MoveTo(Vector3.up * halfHeight, pushParts);
+        nodeBottom.MoveTo(Vector3.down * halfHeight, pushParts);
+        nodeSurface.MoveTo(Vector3.right * diameter * 0.5f, pushParts);
         nodeTop.size = nodeBottom.size = nodeSurface.size = CalculateAttachNodeSize();
     }
 
