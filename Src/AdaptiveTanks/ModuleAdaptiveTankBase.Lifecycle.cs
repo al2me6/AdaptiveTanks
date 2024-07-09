@@ -1,5 +1,4 @@
 ﻿using AdaptiveTanks.Utils;
-using UnityEngine;
 
 namespace AdaptiveTanks;
 
@@ -15,8 +14,9 @@ public abstract partial class ModuleAdaptiveTankBase : PartModule
 
     public override string GetInfo()
     {
-        // This is one of the few methods that gets called on the prefab PM. Initialize here so
-        // the part info window has cost/propellant info.
+        // This is more or less the only method that gets called on the prefab PM.
+        // Initialize here to set up attachment nodes and provide cost/propellant info
+        // for the part info hover.
         if (PartUtils.IsLoadingPrefab) InitializeConfigurationAndModel();
 
         return base.GetInfo();

@@ -10,6 +10,7 @@ public partial class ModuleAdaptiveTankBase
 {
     public void InitializeModel()
     {
+        if (PartUtils.IsLoadingPrefab) BuildStackAttachNodes();
         FindStackAttachNodes();
         ReStack(true);
     }
@@ -133,9 +134,32 @@ public partial class ModuleAdaptiveTankBase
 
     #region attach node management
 
+    // We generate all nodes once when building the prefab. This is indistinguishable from nodes
+    // parsed by the stock game.
+
+    public const string nodeSurfaceId = "srfAttach";
+
     protected AttachNode nodeTop = null!;
     protected AttachNode nodeBottom = null!;
     protected AttachNode nodeSurface => part.srfAttachNode;
+
+    protected void BuildStackAttachNodes()
+    {
+        if (!PartUtils.IsLoadingPrefab)
+        {
+            Debug.LogError("cannot generate attach nodes outside of prefab");
+            return;
+        }
+
+        part.attachNodes.Clear();
+        part.attachNodes.Add(
+            AttachNodeUtils.New(AttachNode.NodeType.Stack, nodeStackTopId, Vector3.up, part));
+        part.attachNodes.Add(
+            AttachNodeUtils.New(AttachNode.NodeType.Stack, nodeStackBottomId, Vector3.down, part));
+
+        part.srfAttachNode =
+            AttachNodeUtils.New(AttachNode.NodeType.Surface, nodeSurfaceId, Vector3.right, part);
+    }
 
     protected void FindStackAttachNodes()
     {

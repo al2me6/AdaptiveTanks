@@ -11,7 +11,6 @@ public partial class ModuleAdaptiveTankBase
     [KSPField] public float dimensionIncrementSmall = 0.25f;
     [KSPField] public float dimensionIncrementSlide = 0.01f;
 
-    // Nodes with these names (e.g. node_stack_top, _bottom) will be used as the stack nodes.
     [KSPField] public string nodeStackTopId = "top";
     [KSPField] public string nodeStackBottomId = "bottom";
 

@@ -5,6 +5,21 @@ namespace AdaptiveTanks.Utils;
 
 public static class AttachNodeUtils
 {
+    public static AttachNode New(
+        AttachNode.NodeType type, string id, Vector3 posOrient, Part owner) => new()
+    {
+        id = id,
+        nodeType = type,
+        attachMethod = type == AttachNode.NodeType.Surface
+            ? AttachNodeMethod.HINGE_JOINT
+            : AttachNodeMethod.FIXED_JOINT,
+        owner = owner,
+        position = posOrient,
+        originalPosition = posOrient,
+        orientation = posOrient,
+        originalOrientation = posOrient
+    };
+
     public static IEnumerable<Part> IterSurfaceAttachedChildren(this Part part)
     {
         foreach (var child in part.children)
