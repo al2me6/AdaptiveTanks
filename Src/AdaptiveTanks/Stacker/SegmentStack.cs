@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using AdaptiveTanks.Utils;
 using UnityEngine;
 
@@ -14,23 +13,11 @@ public readonly record struct SegmentPlacement(
     Asset Asset,
     float Baseline,
     float Stretch
-)
-{
-    public float RealHeight(float diameter) => Asset.AspectRatio * Stretch * diameter;
-}
+);
 
-public readonly record struct SegmentTransformation(Vector3 RealScale, Vector3 RealOffset)
+public readonly record struct SegmentStackBuilder(float Diameter)
 {
-    public void ApplyTo(GameObject go)
-    {
-        go.transform.localScale = RealScale;
-        go.transform.localPosition = RealOffset;
-    }
-}
-
-public class SegmentStack
-{
-    public List<SegmentPlacement> Placements { get; } = [];
+    private readonly List<SegmentPlacement> Placements = [];
 
     public void Add(SegmentRole role, Asset asset, float normBaseline, float normStretch)
     {
@@ -46,9 +33,10 @@ public class SegmentStack
         }
     }
 
-    public IEnumerable<(Asset asset, SegmentTransformation transformation)> IterSegments(
-        float diameter)
+    public SegmentStack Build(float aspectRatio)
     {
+        List<SegmentRealization> realizations = new(Placements.Count);
+
         foreach (var (segmentRole, asset, normBaseline, stretch) in Placements)
         {
             var yStretch = stretch;
@@ -66,24 +54,48 @@ public class SegmentStack
             var nativeBottom = shouldFlip ? -asset.nativeBaseline.y : asset.nativeBaseline.x;
 
             var realScale =
-                new Vector3(1f, yStretch, 1f) * diameter / nativeDiameter;
+                new Vector3(1f, yStretch, 1f) * Diameter / nativeDiameter;
             var realOffset =
-                Vector3.up * (normBaseline - nativeBottom / nativeDiameter * stretch) * diameter;
+                Vector3.up * (normBaseline - nativeBottom / nativeDiameter * stretch) * Diameter;
 
-            yield return (asset, new SegmentTransformation(realScale, realOffset));
+            realizations.Add(new SegmentRealization(segmentRole, asset, realScale, realOffset));
         }
-    }
 
-    public float EvaluateTankVolume(float diameter)
+        return new SegmentStack(Diameter, aspectRatio, realizations);
+    }
+}
+
+public record SegmentRealization(
+    SegmentRole Role,
+    Asset Asset,
+    Vector3 Scale,
+    Vector3 Offset)
+{
+    public float Height => Asset.NativeHeight * Mathf.Abs(Scale.y);
+
+    public void ApplyTo(GameObject go)
+    {
+        go.transform.localScale = Scale;
+        go.transform.localPosition = Offset;
+    }
+}
+
+public record SegmentStack(
+    float Diameter,
+    float AspectRatio,
+    List<SegmentRealization> Realizations)
+{
+    public float EvaluateTankVolume()
     {
         var volume = 0f;
-        foreach (var placement in Placements)
+        foreach (var realization in Realizations)
         {
-            var seg = placement.Asset.Segment;
+            var seg = realization.Asset.Segment;
             if (!seg.IsFueled) continue;
-            var realHeight = placement.RealHeight(diameter);
-            var segVolume = seg.geometryModel!.EvaluateVolume(diameter, realHeight);
-            // Debug.Log($"{seg.geometryModel.GetType().Name}(d={diameter:f}, h={realHeight:f}) = {segVolume:f2} m³");
+            var height = realization.Height;
+            var segVolume = seg.geometryModel!.EvaluateVolume(Diameter, height);
+            Debug.Log(
+                $"{seg.geometryModel.GetType().Name}(d={Diameter:f}, h={height:f}) = {segVolume:f2} m³");
             volume += segVolume;
         }
 
@@ -91,50 +103,47 @@ public class SegmentStack
     }
 
     // TODO: handle stretching.
-    public float EvaluateStructuralCost(float diameter) => Placements
-        .Select(placement => placement.Asset.Segment.structuralCost)
+    public float EvaluateStructuralCost() => Realizations
+        .Select(realization => realization.Asset.Segment.structuralCost)
         .WhereNotNull()
-        .Select(cost => cost.Evaluate(diameter))
+        .Select(cost => cost.Evaluate(Diameter))
         .Sum();
 
-    public float EvaluateStructuralMass(float diameter) => Placements
-        .Select(placement => placement.Asset.Segment.structuralMass)
+    public float EvaluateStructuralMass() => Realizations
+        .Select(realization => realization.Asset.Segment.structuralMass)
         .WhereNotNull()
-        .Select(mass => mass.Evaluate(diameter))
+        .Select(mass => mass.Evaluate(Diameter))
         .Sum();
 
     public float WorstDistortion()
     {
         var worstDelta = 0f;
-        foreach (var placement in Placements)
+        foreach (var (_, _, scale, _) in Realizations)
         {
-            var delta = placement.Stretch - 1f;
+            var delta = Mathf.Abs(scale.y) / Mathf.Abs(scale.x) - 1f;
             if (Mathf.Abs(delta) > Mathf.Abs(worstDelta)) worstDelta = delta;
         }
 
         return worstDelta;
     }
-
-    public string DebugPrint()
-    {
-        var sb = new StringBuilder();
-        foreach (var (segmentRole, asset, baseline, _) in Placements)
-        {
-            sb.AppendFormat("{0:f} [{1}]: {2}\n",
-                baseline, segmentRole, asset.mu.Split('/')[^1]);
-        }
-
-        return sb.ToString();
-    }
 }
 
-public record SegmentStacks(
-    float Diameter,
-    float AspectRatio,
-    SegmentStack Skin,
-    SegmentStack Core
-)
+public record SegmentStacks
 {
-    public float Height => Diameter * AspectRatio;
+    public SegmentStack Skin { get; }
+    public SegmentStack Core { get; }
+
+    public SegmentStacks(SegmentStack skin, SegmentStack core)
+    {
+        Skin = skin;
+        Core = core;
+        if (!MathUtils.ApproxEqRelative(Skin.AspectRatio, Core.AspectRatio, 1e-2f))
+            Debug.LogError($"mismatched solution aspects {Skin.AspectRatio}, {Core.AspectRatio}");
+        if (!MathUtils.ApproxEqRelative(Skin.Diameter, Core.Diameter, 1e-4f))
+            Debug.LogError($"mismatched solution aspects {Skin.Diameter}, {Core.Diameter}");
+    }
+
+    public float Diameter => Skin.Diameter;
+    public float Height => Skin.Diameter * Skin.AspectRatio;
     public float HalfHeight => Height * 0.5f;
 }

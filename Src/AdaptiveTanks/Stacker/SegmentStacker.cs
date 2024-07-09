@@ -1,5 +1,3 @@
-using AdaptiveTanks.Utils;
-
 namespace AdaptiveTanks;
 
 public static class SegmentStacker
@@ -37,12 +35,6 @@ public static class SegmentStacker
         skinProto.SolveFlexSegments();
         coreProto.SolveFlexSegments();
 
-        var (skinStack, skinAspect) = skinProto.Elaborate();
-        var (coreStack, coreAspect) = coreProto.Elaborate();
-
-        if (!MathUtils.ApproxEqRelative(skinAspect, coreAspect, 1e-2f))
-            Debug.LogError($"mismatched solution heights {skinAspect}, {coreAspect}");
-
-        return new SegmentStacks(diameter, skinAspect, skinStack, coreStack);
+        return new SegmentStacks(skinProto.Elaborate(), coreProto.Elaborate());
     }
 }

@@ -303,9 +303,9 @@ internal class ProtoSegmentStack
         }
     }
 
-    public (SegmentStack Stack, float AspectRatio) Elaborate()
+    public SegmentStack Elaborate()
     {
-        var stack = new SegmentStack();
+        var builder = new SegmentStackBuilder(Diameter);
         var baseline = 0f;
 
         foreach (var seg in ProtoSegments)
@@ -320,7 +320,7 @@ internal class ProtoSegmentStack
                     // Note that for a bottom cap, the padding is below the segment.
                     var isBottom = position == CapPosition.Bottom;
                     if (isBottom) baseline += padding;
-                    stack.Add(role, asset!, baseline, forceStretch);
+                    builder.Add(role, asset!, baseline, forceStretch);
                     if (!isBottom) baseline += padding;
                     baseline += asset!.AspectRatio * forceStretch;
                     break;
@@ -329,17 +329,17 @@ internal class ProtoSegmentStack
                     Role: var role, Asset: var asset,
                     AdjustedAspectRatio: var adjustedAspect, ForceStretch: var forceStretch
                 }:
-                    stack.Add(role, asset!, baseline, forceStretch);
+                    builder.Add(role, asset!, baseline, forceStretch);
                     baseline += adjustedAspect;
                     break;
                 case Flex { Solution: var bodySolution }:
-                    stack.Add(bodySolution!, baseline);
+                    builder.Add(bodySolution!, baseline);
                     baseline += bodySolution!.SolutionAspectRatio();
                     break;
             }
         }
 
-        return (stack, baseline);
+        return builder.Build(baseline);
     }
 
     #endregion

@@ -6,7 +6,7 @@ public partial class ModuleAdaptiveTankBase : IPartCostModifier, IPartMassModifi
 {
     protected void UpdateVolume(bool isInitialize)
     {
-        volumeL = segmentStacks!.Core.EvaluateTankVolume(diameter) * MathUtils.M3toL;
+        volumeL = segmentStacks!.Core.EvaluateTankVolume() * MathUtils.M3toL;
         ApplyVolume(isInitialize);
     }
 
@@ -25,6 +25,6 @@ public partial class ModuleAdaptiveTankBase : IPartCostModifier, IPartMassModifi
     public abstract float GetTankCost();
     public abstract float GetTankMass();
 
-    public float GetStructuralCost() => segmentStacks!.Skin.EvaluateStructuralCost(diameter);
-    public float GetStructuralMass() => segmentStacks!.Skin.EvaluateStructuralMass(diameter);
+    public float GetStructuralCost() => segmentStacks!.Skin.EvaluateStructuralCost();
+    public float GetStructuralMass() => segmentStacks!.Skin.EvaluateStructuralMass();
 }

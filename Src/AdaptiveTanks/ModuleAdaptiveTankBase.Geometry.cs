@@ -87,8 +87,9 @@ public partial class ModuleAdaptiveTankBase
 
         var didInstantiateGO = false;
 
-        foreach (var (asset, transformation) in stack.IterSegments(diameter))
+        foreach (var realization in stack.Realizations)
         {
+            var asset = realization.Asset;
             if (fullRebuild || !_existingMeshes.GetOrCreateValue(asset.mu).TryPop(out var mesh))
             {
                 if (asset.Prefab == null) continue;
@@ -105,7 +106,7 @@ public partial class ModuleAdaptiveTankBase
                 didInstantiateGO = true;
             }
 
-            transformation.ApplyTo(mesh);
+            realization.ApplyTo(mesh);
 
             if (asset.materials.Contains(materialId)) asset.materials[materialId].ApplyTo(mesh);
         }
