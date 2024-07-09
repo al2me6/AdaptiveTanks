@@ -94,8 +94,7 @@ public record SegmentStack(
             if (!seg.IsFueled) continue;
             var height = realization.Height;
             var segVolume = seg.geometryModel!.EvaluateVolume(Diameter, height);
-            Debug.Log(
-                $"{seg.geometryModel.GetType().Name}(d={Diameter:f}, h={height:f}) = {segVolume:f2} m³");
+            // Debug.Log($"{seg.geometryModel.GetType().Name}(d={Diameter:f}, h={height:f}) = {segVolume:f2} m³");
             volume += segVolume;
         }
 
