@@ -23,6 +23,8 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
     [Persistent] public bool useStrictAlignment = false;
     [Persistent] public float strictAlignmentBias = 0.5f;
 
+    [Persistent] public bool terminatorDisableStackNode = false;
+
     [Persistent] public float minimumTankAspectRatio = 0.1f;
 
     public GeometryModel? geometryModel = null;
@@ -41,6 +43,7 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
 
         ValidateRole();
         ValidateAlignment();
+        ValidateAttachNodes();
 
         geometryModel = GeometryModel.TryLoadFirstSubclassFromNode(node);
         ValidateGeometryModel();
@@ -78,6 +81,16 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
         {
             Debug.LogWarning($"segment `{name}`: invalid alignment bias {strictAlignmentBias}");
             strictAlignmentBias = Mathf.Clamp01(strictAlignmentBias);
+        }
+    }
+
+    private void ValidateAttachNodes()
+    {
+        if (terminatorDisableStackNode
+            && role != SegmentRoleCfg.accessory
+            && !role.HasFlag(SegmentRoleCfg.tankCapTerminal))
+        {
+            Debug.LogWarning($"non-terminal segment `{name}` may not disable stack nodes");
         }
     }
 

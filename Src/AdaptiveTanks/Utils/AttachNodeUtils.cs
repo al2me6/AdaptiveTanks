@@ -20,6 +20,37 @@ public static class AttachNodeUtils
         originalOrientation = posOrient
     };
 
+    public static void Hide(this AttachNode node)
+    {
+        node.nodeType = AttachNode.NodeType.Dock;
+        node.radius = 0.001f;
+
+        if (node.attachedPart != null)
+        {
+            const float warnDuration = 5f;
+            ScreenMessages.PostScreenMessage(
+                $"[{node.owner.partInfo.title}]: part {node.attachedPart.partInfo.title} is attached to a node that has been disabled!",
+                warnDuration,
+                ScreenMessageStyle.UPPER_RIGHT,
+                XKCDColors.Orange);
+            node.attachedPart.SetHighlightType(Part.HighlightType.AlwaysOn);
+            node.attachedPart.SetHighlightColor(XKCDColors.Orange);
+            node.attachedPart.StartCoroutine(node.attachedPart.ResetHighlightDelayed(warnDuration));
+        }
+    }
+
+    public static void Show(this AttachNode node)
+    {
+        node.nodeType = AttachNode.NodeType.Stack;
+        node.radius = 0.4f;
+    }
+
+    public static void SetVisibility(this AttachNode node, bool visible)
+    {
+        if (visible) node.Show();
+        else node.Hide();
+    }
+
     public static IEnumerable<Part> IterSurfaceAttachedChildren(this Part part)
     {
         foreach (var child in part.children)

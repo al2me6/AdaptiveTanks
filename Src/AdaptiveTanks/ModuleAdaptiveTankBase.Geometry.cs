@@ -170,13 +170,21 @@ public partial class ModuleAdaptiveTankBase
     protected int CalculateAttachNodeSize() =>
         Math.Min((int)(diameter / attachNodeSizeIncrementFactor), maxAttachNodeSize);
 
+    protected bool StackNodeIsEnabled(CapPosition position) =>
+        !Segment(SegmentLayer.Skin, position.AsRoleTerminator()).terminatorDisableStackNode;
+
     protected void UpdateAttachNodes(bool pushParts)
     {
+        nodeSurface.MoveTo(Vector3.right * diameter * 0.5f, pushParts);
+
         var halfHeight = segmentStacks!.HalfHeight;
         nodeTop.MoveTo(Vector3.up * halfHeight, pushParts);
         nodeBottom.MoveTo(Vector3.down * halfHeight, pushParts);
-        nodeSurface.MoveTo(Vector3.right * diameter * 0.5f, pushParts);
+
         nodeTop.size = nodeBottom.size = nodeSurface.size = CalculateAttachNodeSize();
+
+        nodeTop.SetVisibility(StackNodeIsEnabled(CapPosition.Top));
+        nodeBottom.SetVisibility(StackNodeIsEnabled(CapPosition.Bottom));
     }
 
     protected void MoveSurfaceAttachedChildren(float? oldDiameter)

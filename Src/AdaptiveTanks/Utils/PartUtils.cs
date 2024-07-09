@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace AdaptiveTanks.Utils;
 
@@ -61,5 +62,11 @@ public static class PartUtils
         props.TemperatureColor = HighLogic.LoadedSceneIsFlight
             ? part.mpb.GetColor(PhysicsGlobals.TemperaturePropertyID)
             : null;
+    }
+
+    public static IEnumerator<YieldInstruction> ResetHighlightDelayed(this Part part, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        part.SetHighlightDefault();
     }
 }
