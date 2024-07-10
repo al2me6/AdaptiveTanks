@@ -8,8 +8,8 @@ public class AssetMaterial : ConfigNodePersistenceBase, IItemName
 {
     [Persistent(name = "def")] public string defName = null!;
     [Persistent] private string? linkId = null;
-    public string LinkId => linkId ?? defName;
 
+    public string LinkId => linkId ?? defName;
     public string ItemName() => LinkId;
 
     public MaterialDef Def => Library<MaterialDef>.Get(defName);

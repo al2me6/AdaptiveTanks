@@ -39,7 +39,7 @@ internal abstract record ProtoSegment
         internal SegmentDef Segment => Assets[0].Segment;
 
         internal bool AspectRatioIsEmpty =>
-            MathUtils.ApproxEqAbsolute(AspectRatio, 0f, SegmentStacker.Tolerance);
+            MathUtils.ApproxEqAbs(AspectRatio, 0f, SegmentStacker.Tolerance);
 
         internal bool AspectRatioIsValid =>
             AspectRatioIsEmpty ||
@@ -261,7 +261,7 @@ internal class ProtoSegmentStack
         // on both ends. Attempting to negotiate collapse when the ends are staggered will only
         // lead to pain and suffering.
         if (MathUtils
-            .ApproxEqAbsolute(skin.AspectRatio, core.AspectRatio, SegmentStacker.Tolerance))
+            .ApproxEqAbs(skin.AspectRatio, core.AspectRatio, SegmentStacker.Tolerance))
             shift = MathUtils.MinByMagnitude(shift, -skin.AspectRatio);
 
         // Note that a shift is always applied such that

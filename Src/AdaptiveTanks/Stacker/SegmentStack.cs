@@ -8,7 +8,7 @@ namespace AdaptiveTanks;
 /// <summary>
 /// In diameter-normalized (i.e. aspect ratio) units.
 /// </summary>
-public readonly record struct SegmentPlacement(
+public readonly record struct ProtoSegmentPlacement(
     SegmentRole Role,
     Asset Asset,
     float Baseline,
@@ -17,11 +17,11 @@ public readonly record struct SegmentPlacement(
 
 public readonly record struct SegmentStackBuilder(float Diameter)
 {
-    private readonly List<SegmentPlacement> Placements = [];
+    private readonly List<ProtoSegmentPlacement> ProtoPlacements = [];
 
     public void Add(SegmentRole role, Asset asset, float normBaseline, float normStretch)
     {
-        Placements.Add(new SegmentPlacement(role, asset, normBaseline, normStretch));
+        ProtoPlacements.Add(new ProtoSegmentPlacement(role, asset, normBaseline, normStretch));
     }
 
     public void Add(BodySolution bodySolution, float normBaseline)
@@ -35,9 +35,9 @@ public readonly record struct SegmentStackBuilder(float Diameter)
 
     public SegmentStack Build(float aspectRatio)
     {
-        List<SegmentRealization> realizations = new(Placements.Count);
+        List<SegmentPlacement> realPlacements = new(ProtoPlacements.Count);
 
-        foreach (var (segmentRole, asset, normBaseline, stretch) in Placements)
+        foreach (var (segmentRole, asset, normBaseline, stretch) in ProtoPlacements)
         {
             var yStretch = stretch;
             var nativeDiameter = asset.nativeDiameter;
@@ -58,14 +58,14 @@ public readonly record struct SegmentStackBuilder(float Diameter)
             var realOffset =
                 Vector3.up * (normBaseline - nativeBottom / nativeDiameter * stretch) * Diameter;
 
-            realizations.Add(new SegmentRealization(segmentRole, asset, realScale, realOffset));
+            realPlacements.Add(new SegmentPlacement(segmentRole, asset, realScale, realOffset));
         }
 
-        return new SegmentStack(Diameter, aspectRatio, realizations);
+        return new SegmentStack(Diameter, aspectRatio, realPlacements);
     }
 }
 
-public record SegmentRealization(
+public record SegmentPlacement(
     SegmentRole Role,
     Asset Asset,
     Vector3 Scale,
@@ -75,7 +75,7 @@ public record SegmentRealization(
 
     public float Height => Asset.NativeHeight * Mathf.Abs(Scale.y);
 
-    public void ApplyTo(GameObject go)
+    public void RealizeWith(GameObject go)
     {
         RealizedMesh = go.transform;
         RealizedMesh.localScale = Scale;
@@ -86,11 +86,11 @@ public record SegmentRealization(
 public record SegmentStack(
     float Diameter,
     float AspectRatio,
-    List<SegmentRealization> Realizations)
+    List<SegmentPlacement> Placements)
 {
-    public SegmentRealization GetTerminator(CapPosition position)
+    public SegmentPlacement GetTerminator(CapPosition position)
     {
-        var terminator = Realizations[position == CapPosition.Bottom ? 0 : ^1];
+        var terminator = Placements[position == CapPosition.Bottom ? 0 : ^1];
         if (!terminator.Role.IsTerminator())
             Debug.LogError("non-terminator segment found in terminating position");
         return terminator;
@@ -99,11 +99,11 @@ public record SegmentStack(
     public float EvaluateTankVolume()
     {
         var volume = 0f;
-        foreach (var realization in Realizations)
+        foreach (var placement in Placements)
         {
-            var seg = realization.Asset.Segment;
+            var seg = placement.Asset.Segment;
             if (!seg.IsFueled) continue;
-            var height = realization.Height;
+            var height = placement.Height;
             var segVolume = seg.geometryModel!.EvaluateVolume(Diameter, height);
             // Debug.Log($"{seg.geometryModel.GetType().Name}(d={Diameter:f}, h={height:f}) = {segVolume:f2} m³");
             volume += segVolume;
@@ -113,14 +113,14 @@ public record SegmentStack(
     }
 
     // TODO: handle stretching.
-    public float EvaluateStructuralCost() => Realizations
-        .Select(realization => realization.Asset.Segment.structuralCost)
+    public float EvaluateStructuralCost() => Placements
+        .Select(placement => placement.Asset.Segment.structuralCost)
         .WhereNotNull()
         .Select(cost => cost.Evaluate(Diameter))
         .Sum();
 
-    public float EvaluateStructuralMass() => Realizations
-        .Select(realization => realization.Asset.Segment.structuralMass)
+    public float EvaluateStructuralMass() => Placements
+        .Select(placement => placement.Asset.Segment.structuralMass)
         .WhereNotNull()
         .Select(mass => mass.Evaluate(Diameter))
         .Sum();
@@ -128,7 +128,7 @@ public record SegmentStack(
     public float WorstDistortion()
     {
         var worstDelta = 0f;
-        foreach (var (_, _, scale, _) in Realizations)
+        foreach (var (_, _, scale, _) in Placements)
         {
             var delta = Mathf.Abs(scale.y) / Mathf.Abs(scale.x) - 1f;
             if (Mathf.Abs(delta) > Mathf.Abs(worstDelta)) worstDelta = delta;
@@ -147,9 +147,9 @@ public record SegmentStacks
     {
         Skin = skin;
         Core = core;
-        if (!MathUtils.ApproxEqRelative(Skin.AspectRatio, Core.AspectRatio, 1e-2f))
+        if (!MathUtils.ApproxEqAbs(Skin.AspectRatio, Core.AspectRatio, SegmentStacker.Tolerance))
             Debug.LogError($"mismatched solution aspects {Skin.AspectRatio}, {Core.AspectRatio}");
-        if (!MathUtils.ApproxEqRelative(Skin.Diameter, Core.Diameter, 1e-4f))
+        if (!MathUtils.ApproxEqRel(Skin.Diameter, Core.Diameter, 1e-4f))
             Debug.LogError($"mismatched solution aspects {Skin.Diameter}, {Core.Diameter}");
     }
 

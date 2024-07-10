@@ -12,7 +12,7 @@ public abstract class StyleDef : ConfigNodePersistenceBase, ILibraryLoad
     [Persistent] protected string? displayName = null;
 
     public Dictionary<SegmentRole, List<SegmentDef>> Segments { get; private set; } = null!;
-    public List<LinkedMaterial> LinkedMaterials { get; } = [];
+    public List<(string Id, string DisplayName)> LinkedMaterials { get; } = [];
 
     public override void Load(ConfigNode node)
     {
@@ -23,11 +23,11 @@ public abstract class StyleDef : ConfigNodePersistenceBase, ILibraryLoad
         Segments = roles
             .Cast<SegmentRole>()
             .ToDictionary(role => role, _ => new List<SegmentDef>());
-        foreach (var segmentDef in segments)
+        foreach (var segment in segments)
         {
             foreach (var role in roles.Cast<SegmentRole>())
             {
-                if (segmentDef.Supports(role)) Segments[role].Add(segmentDef);
+                if (segment.Supports(role)) Segments[role].Add(segment);
             }
         }
 
@@ -48,7 +48,7 @@ public abstract class StyleDef : ConfigNodePersistenceBase, ILibraryLoad
         foreach (var material in segments[0].assets[0].materials)
         {
             if (!commonLinkIds!.Contains(material.LinkId)) continue;
-            LinkedMaterials.Add(new LinkedMaterial(material.LinkId, material.Def.DisplayName));
+            LinkedMaterials.Add((material.LinkId, material.Def.DisplayName));
         }
     }
 

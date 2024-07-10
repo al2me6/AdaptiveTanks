@@ -39,7 +39,7 @@ public partial class ModuleAdaptiveTankBase
             maxIntertankVolumetricDeviation);
 
         var solutionHeight = segmentStacks.Height;
-        if (!MathUtils.ApproxEqAbsolute(height, solutionHeight, SegmentStacker.Tolerance))
+        if (!MathUtils.ApproxEqAbs(height, solutionHeight, SegmentStacker.Tolerance))
         {
             Debug.LogError($"solution height ({solutionHeight}) differs from target ({height})");
             height = solutionHeight;
@@ -97,9 +97,9 @@ public partial class ModuleAdaptiveTankBase
 
         var didInstantiateGO = false;
 
-        foreach (var realization in stack.Realizations)
+        foreach (var placement in stack.Placements)
         {
-            var asset = realization.Asset;
+            var asset = placement.Asset;
             if (fullRebuild || !_existingMeshes.GetOrCreateValue(asset.mu).TryPop(out var mesh))
             {
                 if (asset.Prefab == null) continue;
@@ -116,7 +116,7 @@ public partial class ModuleAdaptiveTankBase
                 didInstantiateGO = true;
             }
 
-            realization.ApplyTo(mesh);
+            placement.RealizeWith(mesh);
 
             if (asset.materials.Contains(materialId)) asset.materials[materialId].ApplyTo(mesh);
         }
@@ -243,29 +243,33 @@ public partial class ModuleAdaptiveTankBase
 
     protected void UpdateExtraAttachNodes(Cap position, int nodeSize, bool pushParts)
     {
-        var idx = 0;
         var pool = nodeDynamicPool[position];
-
         var terminator = segmentStacks!.Skin.GetTerminator(position);
-        foreach (var extraNode in terminator.Asset.extraNodes)
+        var segmentMesh = terminator.RealizedMesh;
+        var idx = 0;
+
+        if (segmentMesh != null)
         {
-            var node = pool[idx];
+            foreach (var extraNode in terminator.Asset.extraNodes)
+            {
+                var node = pool[idx];
 
-            var worldNodePos = terminator.RealizedMesh!.TransformPoint(extraNode.position);
-            var localNodePos = transform.InverseTransformPoint(worldNodePos);
-            node.MoveTo(localNodePos, pushParts);
+                var worldNodePos = segmentMesh.TransformPoint(extraNode.position);
+                var localNodePos = transform.InverseTransformPoint(worldNodePos);
+                node.MoveTo(localNodePos, pushParts);
 
-            var worldNodeOrient = terminator.RealizedMesh.TransformDirection(extraNode.orientation);
-            // Account for mesh flipping manually.
-            if (terminator.Scale.y < 0f) worldNodeOrient.y *= -1f;
-            var localNodeOrient = transform.InverseTransformDirection(worldNodeOrient);
-            // Let's not rotate parts with the node orientation. That way probably lies madness.
-            node.SetOrientation(localNodeOrient);
+                var worldNodeOrient = segmentMesh.TransformDirection(extraNode.orientation);
+                // Account for mesh flipping manually.
+                if (terminator.Scale.y < 0f) worldNodeOrient.y *= -1f;
+                var localNodeOrient = transform.InverseTransformDirection(worldNodeOrient);
+                // Let's not rotate parts with the node orientation. That way probably lies madness.
+                node.SetOrientation(localNodeOrient);
 
-            node.Show();
-            node.size = nodeSize;
+                node.Show();
+                node.size = nodeSize;
 
-            ++idx;
+                ++idx;
+            }
         }
 
         for (; idx < pool.Count; ++idx)

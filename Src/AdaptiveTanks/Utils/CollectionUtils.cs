@@ -20,12 +20,9 @@ public static class CollectionUtils
 
     public static V GetOrCreateValue<K, V>(this Dictionary<K, V> dict, K key) where V : new()
     {
-        if (!dict.TryGetValue(key, out var value))
-        {
-            value = new V();
-            dict[key] = value;
-        }
-
+        if (dict.TryGetValue(key, out var value)) return value;
+        value = new V();
+        dict[key] = value;
         return value;
     }
 

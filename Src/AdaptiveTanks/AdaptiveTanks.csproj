@@ -22,5 +22,6 @@
   </ItemGroup>
   <ItemGroup>
     <Publicize Include="Assembly-CSharp:Part.rendererlistscreated"/>
+    <Publicize Include="Assembly-CSharp:AttachNode.nodeDistEpsilon"/>
   </ItemGroup>
 </Project>

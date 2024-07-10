@@ -8,11 +8,11 @@ public static class MathUtils
 {
     public const float M3toL = 1000f;
 
-    public static bool ApproxEqAbsolute(float a, float b, float epsilon) =>
+    public static bool ApproxEqAbs(float a, float b, float epsilon) =>
         Mathf.Abs(a - b) < epsilon;
 
-    public static bool ApproxEqRelative(float a, float b, float ratio) =>
-        Mathf.Abs(a - b) <= Mathf.Abs(MaxByMagnitude(a, b)) * ratio;
+    public static bool ApproxEqRel(float a, float b, float ratio) =>
+        Mathf.Abs(a - b) < Mathf.Abs(MaxByMagnitude(a, b)) * ratio;
 
     public static void Clamp(this ref float value, float min, float max) =>
         value = Mathf.Clamp(value, min, max);
@@ -127,7 +127,7 @@ public static class MathUtils
     {
         var a_sq = a * a;
         var c_sq = c * c;
-        if (ApproxEqRelative(a, c, 1e-2f)) return 4 * Mathf.PI * a_sq; // nearly spherical
+        if (ApproxEqRel(a, c, 1e-2f)) return 4 * Mathf.PI * a_sq; // nearly spherical
         if (c < a) // oblate
         {
             var e = Mathf.Sqrt(1f - c_sq / a_sq);
