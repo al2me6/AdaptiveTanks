@@ -71,12 +71,15 @@ public record SegmentRealization(
     Vector3 Scale,
     Vector3 Offset)
 {
+    public Transform? RealizedMesh { get; private set; } = null;
+
     public float Height => Asset.NativeHeight * Mathf.Abs(Scale.y);
 
     public void ApplyTo(GameObject go)
     {
-        go.transform.localScale = Scale;
-        go.transform.localPosition = Offset;
+        RealizedMesh = go.transform;
+        RealizedMesh.localScale = Scale;
+        RealizedMesh.localPosition = Offset;
     }
 }
 
