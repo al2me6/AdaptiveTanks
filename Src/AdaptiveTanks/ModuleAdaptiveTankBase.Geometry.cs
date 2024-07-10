@@ -198,7 +198,7 @@ public partial class ModuleAdaptiveTankBase
                     AttachNode.NodeType.Stack, $"{NodeDynamicTag(position)}{i}", Vector3.up, part));
             }
 
-            Debug.Log($"generated {maxNodeCount} dynamic {position.ToTopBottom()} nodes", true);
+            Debug.Log($"generated {maxNodeCount} dynamic {position.ToTopBottom()} nodes");
         }
     }
 
