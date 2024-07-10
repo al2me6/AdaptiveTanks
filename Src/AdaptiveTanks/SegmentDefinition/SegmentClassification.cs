@@ -49,10 +49,10 @@ public static class SegmentClassificationExtensions
         _ => throw new ArgumentOutOfRangeException(nameof(position))
     };
 
-    public static string AsNoseMount(this CapPosition position) => position switch
+    public static string ToTopBottom(this CapPosition position) => position switch
     {
-        CapPosition.Top => "Nose",
-        CapPosition.Bottom => "Mount",
+        CapPosition.Top => "top",
+        CapPosition.Bottom => "bottom",
         _ => throw new ArgumentOutOfRangeException(nameof(position))
     };
 

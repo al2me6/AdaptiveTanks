@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using AdaptiveTanks.Utils;
 using ProceduralTools;
 using UnityEngine;
 
 namespace AdaptiveTanks;
+
+using Cap = CapPosition;
 
 public partial class ModuleAdaptiveTankBase
 {
@@ -44,9 +47,16 @@ public partial class ModuleAdaptiveTankBase
         }
 
         RealizeGeometry(fullRebuild: isInitialize);
+
         RecenterStack();
+
+        // Only push parts when not initializing.
+        // When dropping a new part, there's nothing to push.
+        // When loading a vessel, the parts are already in the right places and pushing
+        // will result in catastrophe.
         UpdateAttachNodes(pushParts: !isInitialize);
-        if (!isInitialize) MoveSurfaceAttachedChildren(oldDiameter);
+        if (!isInitialize) MoveSurfaceAttachedChildren(oldDiameter!.Value);
+        UpdateStackSymmetry();
 
         if (HighLogic.LoadedSceneIsEditor || HighLogic.LoadedSceneIsFlight)
             DragCubeTool.UpdateDragCubes(part);
@@ -140,9 +150,22 @@ public partial class ModuleAdaptiveTankBase
 
     public const string nodeSurfaceId = "srfAttach";
 
+    public static string NodeDynamicTag(Cap position) => position switch
+    {
+        Cap.Top => "__ATDynamicTop",
+        Cap.Bottom => "__ATDynamicBottom",
+        _ => throw new ArgumentOutOfRangeException(nameof(position))
+    };
+
     protected AttachNode nodeTop = null!;
     protected AttachNode nodeBottom = null!;
     protected AttachNode nodeSurface => part.srfAttachNode;
+
+    protected readonly Dictionary<Cap, List<AttachNode>> nodeDynamicPool = new()
+    {
+        [Cap.Top] = [],
+        [Cap.Bottom] = []
+    };
 
     protected void BuildStackAttachNodes()
     {
@@ -160,18 +183,44 @@ public partial class ModuleAdaptiveTankBase
 
         part.srfAttachNode =
             AttachNodeUtils.New(AttachNode.NodeType.Surface, nodeSurfaceId, Vector3.right, part);
+
+        foreach (var position in nodeDynamicPool.Keys)
+        {
+            var maxNodeCount = Library<StyleDefSkin>
+                .GetAll(skinStyles)
+                .SelectMany(style => style.Segments[position.AsRoleTerminator()])
+                .Select(seg => seg.ExtraNodeCount)
+                .Max();
+
+            for (var i = 0; i < maxNodeCount; ++i)
+            {
+                part.attachNodes.Add(AttachNodeUtils.New(
+                    AttachNode.NodeType.Stack, $"{NodeDynamicTag(position)}{i}", Vector3.up, part));
+            }
+
+            Debug.Log($"generated {maxNodeCount} dynamic {position.ToTopBottom()} nodes", true);
+        }
     }
 
     protected void FindStackAttachNodes()
     {
-        nodeTop = part.attachNodes.Find(node => node.id == nodeStackTopId);
-        nodeBottom = part.attachNodes.Find(node => node.id == nodeStackBottomId);
+        foreach (var node in part.attachNodes)
+        {
+            if (node.id == nodeStackTopId)
+                nodeTop = node;
+            else if (node.id == nodeStackBottomId)
+                nodeBottom = node;
+            else if (node.id.StartsWith(NodeDynamicTag(Cap.Top)))
+                nodeDynamicPool[Cap.Top].Add(node);
+            else if (node.id.StartsWith(NodeDynamicTag(Cap.Bottom)))
+                nodeDynamicPool[Cap.Bottom].Add(node);
+        }
     }
 
     protected int CalculateAttachNodeSize() =>
         Math.Min((int)(diameter / attachNodeSizeIncrementFactor), maxAttachNodeSize);
 
-    protected bool StackNodeIsEnabled(CapPosition position) =>
+    protected bool StackNodeIsEnabled(Cap position) =>
         !Segment(SegmentLayer.Skin, position.AsRoleTerminator()).terminatorDisableStackNode;
 
     protected void UpdateAttachNodes(bool pushParts)
@@ -182,17 +231,60 @@ public partial class ModuleAdaptiveTankBase
         nodeTop.MoveTo(Vector3.up * halfHeight, pushParts);
         nodeBottom.MoveTo(Vector3.down * halfHeight, pushParts);
 
-        nodeTop.size = nodeBottom.size = nodeSurface.size = CalculateAttachNodeSize();
+        nodeTop.SetVisibility(StackNodeIsEnabled(Cap.Top));
+        nodeBottom.SetVisibility(StackNodeIsEnabled(Cap.Bottom));
 
-        nodeTop.SetVisibility(StackNodeIsEnabled(CapPosition.Top));
-        nodeBottom.SetVisibility(StackNodeIsEnabled(CapPosition.Bottom));
+        var nodeSize = CalculateAttachNodeSize();
+        nodeTop.size = nodeBottom.size = nodeSurface.size = nodeSize;
+
+        UpdateExtraAttachNodes(Cap.Top, nodeSize, pushParts);
+        UpdateExtraAttachNodes(Cap.Bottom, nodeSize, pushParts);
     }
 
-    protected void MoveSurfaceAttachedChildren(float? oldDiameter)
+    protected void UpdateExtraAttachNodes(Cap position, int nodeSize, bool pushParts)
     {
-        if (oldDiameter == null) return;
+        var idx = 0;
+        var pool = nodeDynamicPool[position];
 
-        var deltaRadius = (diameter - oldDiameter.Value) / 2f;
+        var terminator = segmentStacks!.Skin.GetTerminator(position);
+        foreach (var extraNode in terminator.Asset.extraNodes)
+        {
+            var node = pool[idx];
+
+            var worldNodePos = terminator.RealizedMesh!.TransformPoint(extraNode.position);
+            var localNodePos = transform.InverseTransformPoint(worldNodePos);
+            node.MoveTo(localNodePos, pushParts);
+
+            var worldNodeOrient = terminator.RealizedMesh.TransformDirection(extraNode.orientation);
+            // Account for mesh flipping manually.
+            if (terminator.Scale.y < 0f) worldNodeOrient.y *= -1f;
+            var localNodeOrient = transform.InverseTransformDirection(worldNodeOrient);
+            // Let's not rotate parts with the node orientation. That way probably lies madness.
+            node.SetOrientation(localNodeOrient);
+
+            node.Show();
+            node.size = nodeSize;
+
+            ++idx;
+        }
+
+        for (; idx < pool.Count; ++idx)
+        {
+            if (pool[idx].IsHidden()) break;
+            pool[idx].Hide();
+        }
+    }
+
+    protected void UpdateStackSymmetry()
+    {
+        var symmetryTop = Segment(SegmentLayer.Skin, Cap.Top).terminatorStackSymmetry;
+        var symmetryBottom = Segment(SegmentLayer.Skin, Cap.Bottom).terminatorStackSymmetry;
+        part.stackSymmetry = Math.Max(symmetryTop, symmetryBottom);
+    }
+
+    protected void MoveSurfaceAttachedChildren(float oldDiameter)
+    {
+        var deltaRadius = (diameter - oldDiameter) / 2f;
 
         foreach (var child in part.IterSurfaceAttachedChildren())
         {

@@ -88,6 +88,14 @@ public record SegmentStack(
     float AspectRatio,
     List<SegmentRealization> Realizations)
 {
+    public SegmentRealization GetTerminator(CapPosition position)
+    {
+        var terminator = Realizations[position == CapPosition.Bottom ? 0 : ^1];
+        if (!terminator.Role.IsTerminator())
+            Debug.LogError("non-terminator segment found in terminating position");
+        return terminator;
+    }
+
     public float EvaluateTankVolume()
     {
         var volume = 0f;

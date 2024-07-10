@@ -5,25 +5,39 @@ namespace AdaptiveTanks.Utils;
 
 public static class AttachNodeUtils
 {
-    public static AttachNode New(
-        AttachNode.NodeType type, string id, Vector3 posOrient, Part owner) => new()
+    public static AttachNode New(AttachNode.NodeType type, string id, Vector3 posOrient, Part owner)
     {
-        id = id,
-        nodeType = type,
-        attachMethod = type == AttachNode.NodeType.Surface
-            ? AttachNodeMethod.HINGE_JOINT
-            : AttachNodeMethod.FIXED_JOINT,
-        owner = owner,
-        position = posOrient,
-        originalPosition = posOrient,
-        orientation = posOrient,
-        originalOrientation = posOrient
-    };
+        var node = new AttachNode
+        {
+            id = id,
+            nodeType = type,
+            attachMethod = type == AttachNode.NodeType.Surface
+                ? AttachNodeMethod.HINGE_JOINT
+                : AttachNodeMethod.FIXED_JOINT,
+            owner = owner
+        };
+        node.SetPosition(posOrient);
+        node.SetOrientation(posOrient);
+        return node;
+    }
 
+    public static void SetPosition(this AttachNode node, Vector3 pos) =>
+        node.position = node.originalPosition = pos;
+
+    public static void SetOrientation(this AttachNode node, Vector3 orient) =>
+        node.orientation = node.originalOrientation = orient;
+
+    public static void Show(this AttachNode node)
+    {
+        node.nodeType = AttachNode.NodeType.Stack;
+        node.radius = 0.4f;
+    }
+
+    // See the stock `ModuleDynamicNodes`.
     public static void Hide(this AttachNode node)
     {
         node.nodeType = AttachNode.NodeType.Dock;
-        node.radius = 0.001f;
+        node.radius = 0.0001f;
 
         if (node.attachedPart != null)
         {
@@ -39,11 +53,7 @@ public static class AttachNodeUtils
         }
     }
 
-    public static void Show(this AttachNode node)
-    {
-        node.nodeType = AttachNode.NodeType.Stack;
-        node.radius = 0.4f;
-    }
+    public static bool IsHidden(this AttachNode node) => node.radius < 0.1f;
 
     public static void SetVisibility(this AttachNode node, bool visible)
     {

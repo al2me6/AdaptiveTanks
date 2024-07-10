@@ -132,6 +132,9 @@ public partial class ModuleAdaptiveTankBase
     protected SegmentDef Segment(Layer layer, Role role) =>
         Library<SegmentDef>.Get(SegmentName(layer, role));
 
+    protected SegmentDef Segment(Layer layer, Cap position) =>
+        Segment(layer, position.AsRoleTerminator());
+
     // TODO: this needs caching.
 
     public SelectedSegments SkinSegments() => new(

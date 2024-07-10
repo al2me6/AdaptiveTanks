@@ -1,3 +1,4 @@
+using System.Linq;
 using AdaptiveTanks.SegmentDefinition;
 using AdaptiveTanks.Utils;
 using ROUtils.DataTypes;
@@ -14,6 +15,8 @@ public class Asset : ConfigNodePersistenceBase
 
     [Persistent] public Vector2 diameterRange = new(0f, float.PositiveInfinity);
 
+    public ExtraNode[] extraNodes = [];
+
     public NamedCollection<AssetMaterial> materials = [];
 
     public GameObject? Prefab { get; private set; }
@@ -22,6 +25,8 @@ public class Asset : ConfigNodePersistenceBase
     public override void Load(ConfigNode node)
     {
         base.Load(node);
+
+        extraNodes = node.LoadAllFromNodes<ExtraNode>().ToArray();
 
         foreach (var material in node.LoadAllFromNodes<AssetMaterial>(nodeName: "Material"))
         {

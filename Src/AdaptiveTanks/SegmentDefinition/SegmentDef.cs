@@ -23,6 +23,7 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
     [Persistent] public bool useStrictAlignment = false;
     [Persistent] public float strictAlignmentBias = 0.5f;
 
+    [Persistent] public int terminatorStackSymmetry = 0;
     [Persistent] public bool terminatorDisableStackNode = false;
 
     [Persistent] public float minimumTankAspectRatio = 0.1f;
@@ -117,6 +118,12 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
             minimumTankAspectRatio = assets.Select(asset => asset.AspectRatio).Min() * 0.5f;
         }
 
+        if (assets.Select(asset => asset.extraNodes.Length).Distinct().Count() > 1)
+        {
+            Debug.LogError($"segment `{name}`: assets must contain the same number of extra nodes");
+            foreach (var asset in assets) asset.extraNodes = [];
+        }
+
         if (!MathUtils.IntervalsAreContiguous(assets.Select(a => a.diameterRange)))
         {
             Debug.LogError($"segment `{name}` supports a disjoint diameter range");
@@ -159,6 +166,8 @@ public class SegmentDef : ConfigNodePersistenceBase, ILibraryLoad
 
     public bool CanToggleAlignment =>
         align == (SegmentAlignmentCfg.pinBothEnds | SegmentAlignmentCfg.pinInteriorEnd);
+
+    public int ExtraNodeCount => assets[0].extraNodes.Length;
 
     #endregion
 
