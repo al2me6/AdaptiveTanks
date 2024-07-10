@@ -11,9 +11,6 @@ public partial class ModuleAdaptiveTankBase
     [KSPField] public float dimensionIncrementSmall = 0.25f;
     [KSPField] public float dimensionIncrementSlide = 0.01f;
 
-    [KSPField] public string nodeStackTopId = "top";
-    [KSPField] public string nodeStackBottomId = "bottom";
-
     // For every increase in diameter by this amount, increment the size of the attachment node by 1.
     [KSPField] public float attachNodeSizeIncrementFactor = 1.25f;
     [KSPField] public int maxAttachNodeSize = 6;

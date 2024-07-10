@@ -148,6 +148,8 @@ public partial class ModuleAdaptiveTankBase
     // We generate all nodes once when building the prefab. This is indistinguishable from nodes
     // parsed by the stock game.
 
+    public const string nodeStackTopId = "top";
+    public const string nodeStackBottomId = "bottom";
     public const string nodeSurfaceId = "srfAttach";
 
     public static string NodeDynamicTag(Cap position) => position switch
@@ -175,7 +177,6 @@ public partial class ModuleAdaptiveTankBase
             return;
         }
 
-        part.attachNodes.Clear();
         part.attachNodes.Add(
             AttachNodeUtils.New(AttachNode.NodeType.Stack, nodeStackTopId, Vector3.up, part));
         part.attachNodes.Add(
@@ -243,6 +244,9 @@ public partial class ModuleAdaptiveTankBase
 
     protected void UpdateExtraAttachNodes(Cap position, int nodeSize, bool pushParts)
     {
+        // Shrink the sizes of extra nodes by 1.
+        nodeSize = Math.Max(0, nodeSize - 1);
+
         var pool = nodeDynamicPool[position];
         var terminator = segmentStacks!.Skin.GetTerminator(position);
         var segmentMesh = terminator.RealizedMesh;
