@@ -4,6 +4,15 @@ using UnityEngine;
 
 namespace AdaptiveTanks.Utils;
 
+public readonly record struct Cylindrical(float r, float theta, float y)
+{
+    public static explicit operator Cylindrical(Vector3 vec) =>
+        new((float)new Vector2d(vec.x, vec.z).magnitude, Mathf.Atan2(vec.z, vec.x), vec.y);
+
+    public static explicit operator Vector3(Cylindrical cyl) =>
+        new(cyl.r * Mathf.Cos(cyl.theta), cyl.y, cyl.r * Mathf.Sin(cyl.theta));
+}
+
 public static class MathUtils
 {
     public const float M3toL = 1000f;
