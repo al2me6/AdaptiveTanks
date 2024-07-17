@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace AdaptiveTanks.Utils;
@@ -101,12 +102,6 @@ public static class AttachNodeUtils
         else node.Hide();
     }
 
-    public static IEnumerable<Part> IterSurfaceAttachedChildren(this Part part)
-    {
-        foreach (var child in part.children)
-        {
-            if (child.FindAttachNodeByPart(part) is { nodeType: AttachNode.NodeType.Surface })
-                yield return child;
-        }
-    }
+    public static IEnumerable<Part> IterSurfaceAttachedChildren(this Part part) =>
+        part.children.Where(child => child.srfAttachNode.attachedPart == part);
 }
