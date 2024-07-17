@@ -148,14 +148,14 @@ public partial class ModuleAdaptiveTankBase
     // We generate all nodes once when building the prefab. This is indistinguishable from nodes
     // parsed by the stock game.
 
-    public const string nodeStackTopId = "top";
-    public const string nodeStackBottomId = "bottom";
-    public const string nodeSurfaceId = "srfAttach";
+    public const string NodeStackTopId = "top";
+    public const string NodeStackBottomId = "bottom";
+    public const string NodeSurfaceId = "srfAttach";
 
     public static string NodeDynamicTag(Cap position) => position switch
     {
-        Cap.Top => "__ATDynamicTop",
-        Cap.Bottom => "__ATDynamicBottom",
+        Cap.Top => "__ATDynTop",
+        Cap.Bottom => "__ATDynBottom",
         _ => throw new ArgumentOutOfRangeException(nameof(position))
     };
 
@@ -178,12 +178,12 @@ public partial class ModuleAdaptiveTankBase
         }
 
         part.attachNodes.Add(
-            AttachNodeUtils.New(AttachNode.NodeType.Stack, nodeStackTopId, Vector3.up, part));
+            AttachNodeUtils.New(AttachNode.NodeType.Stack, NodeStackTopId, Vector3.up, part));
         part.attachNodes.Add(
-            AttachNodeUtils.New(AttachNode.NodeType.Stack, nodeStackBottomId, Vector3.down, part));
+            AttachNodeUtils.New(AttachNode.NodeType.Stack, NodeStackBottomId, Vector3.down, part));
 
         part.srfAttachNode =
-            AttachNodeUtils.New(AttachNode.NodeType.Surface, nodeSurfaceId, Vector3.right, part);
+            AttachNodeUtils.New(AttachNode.NodeType.Surface, NodeSurfaceId, Vector3.right, part);
 
         foreach (var position in nodeDynamicPool.Keys)
         {
@@ -199,7 +199,7 @@ public partial class ModuleAdaptiveTankBase
                     AttachNode.NodeType.Stack, $"{NodeDynamicTag(position)}{i}", Vector3.up, part));
             }
 
-            Debug.Log($"generated {maxNodeCount} dynamic {position.ToTopBottom()} nodes");
+            Debug.Log($"generated {maxNodeCount} dynamic {position} nodes");
         }
     }
 
@@ -207,14 +207,17 @@ public partial class ModuleAdaptiveTankBase
     {
         foreach (var node in part.attachNodes)
         {
-            if (node.id == nodeStackTopId)
+            if (node.id == NodeStackTopId)
                 nodeTop = node;
-            else if (node.id == nodeStackBottomId)
+            else if (node.id == NodeStackBottomId)
                 nodeBottom = node;
-            else if (node.id.StartsWith(NodeDynamicTag(Cap.Top)))
-                nodeDynamicPool[Cap.Top].Add(node);
-            else if (node.id.StartsWith(NodeDynamicTag(Cap.Bottom)))
-                nodeDynamicPool[Cap.Bottom].Add(node);
+            else
+                foreach (var role in nodeDynamicPool.Keys)
+                {
+                    if (!node.id.StartsWith(NodeDynamicTag(role))) continue;
+                    nodeDynamicPool[role].Add(node);
+                    break;
+                }
         }
     }
 
@@ -238,8 +241,8 @@ public partial class ModuleAdaptiveTankBase
         var nodeSize = CalculateAttachNodeSize();
         nodeTop.size = nodeBottom.size = nodeSurface.size = nodeSize;
 
-        UpdateExtraAttachNodes(Cap.Top, nodeSize, pushParts);
-        UpdateExtraAttachNodes(Cap.Bottom, nodeSize, pushParts);
+        foreach (var position in nodeDynamicPool.Keys)
+            UpdateExtraAttachNodes(position, nodeSize, pushParts);
     }
 
     protected void UpdateExtraAttachNodes(Cap position, int nodeSize, bool pushParts)
@@ -250,13 +253,13 @@ public partial class ModuleAdaptiveTankBase
         var pool = nodeDynamicPool[position];
         var terminator = segmentStacks!.Skin.GetTerminator(position);
         var segmentMesh = terminator.RealizedMesh;
-        var idx = 0;
+        var numExtraNodes = 0;
 
         if (segmentMesh != null)
         {
             foreach (var extraNode in terminator.Asset.extraNodes)
             {
-                var node = pool[idx];
+                var node = pool[numExtraNodes];
 
                 var worldNodePos = segmentMesh.TransformPoint(extraNode.position);
                 var localNodePos = transform.InverseTransformPoint(worldNodePos);
@@ -272,14 +275,15 @@ public partial class ModuleAdaptiveTankBase
                 node.Show();
                 node.size = nodeSize;
 
-                ++idx;
+                ++numExtraNodes;
             }
         }
 
-        for (; idx < pool.Count; ++idx)
+        for (; numExtraNodes < pool.Count; ++numExtraNodes)
         {
-            if (pool[idx].IsHidden()) break;
-            pool[idx].Hide();
+            // Nodes are used sequentially. All subsequent ones will already be hidden.
+            if (pool[numExtraNodes].IsHidden()) break;
+            pool[numExtraNodes].Hide();
         }
     }
 
