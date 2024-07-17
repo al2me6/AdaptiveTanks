@@ -23,14 +23,15 @@ public partial class ModuleAdaptiveTankBase
     public const string SkinStackAnchorName = "__ATSkinStack";
     public const string CoreStackAnchorName = "__ATCoreStack";
 
-    protected SegmentStacks? segmentStacks;
+    protected SegmentStacks? stacks;
 
     protected readonly Dictionary<Transform, HashSet<Renderer>> stackRenderersCache = new();
 
     public void ReStack(bool isInitialize)
     {
-        var oldDiameter = segmentStacks?.Diameter;
-        segmentStacks = SegmentStacker.SolveStack(
+        var surfaceAttachMaps = BuildSurfaceAttachMaps();
+
+        stacks = SegmentStacker.SolveStack(
             diameter,
             height,
             SkinSegments(),
@@ -38,7 +39,7 @@ public partial class ModuleAdaptiveTankBase
             VolumetricMixtureRatio(),
             maxIntertankVolumetricDeviation);
 
-        var solutionHeight = segmentStacks.Height;
+        var solutionHeight = stacks.Height;
         if (!MathUtils.ApproxEqAbs(height, solutionHeight, SegmentStacker.Tolerance))
         {
             Debug.LogError($"solution height ({solutionHeight}) differs from target ({height})");
@@ -46,17 +47,17 @@ public partial class ModuleAdaptiveTankBase
             MonoUtilities.RefreshPartContextWindow(part);
         }
 
-        RealizeGeometry(fullRebuild: isInitialize);
-
-        RecenterStack();
+        RealizeStacks(fullRebuild: isInitialize);
+        RecenterStacks();
 
         // Only push parts when not initializing.
         // When dropping a new part, there's nothing to push.
         // When loading a vessel, the parts are already in the right places and pushing
         // will result in catastrophe.
         UpdateAttachNodes(pushParts: !isInitialize);
-        if (!isInitialize) MoveSurfaceAttachedChildren(oldDiameter!.Value);
         UpdateStackSymmetry();
+        if (!isInitialize) PushSurfaceAttachedChildren(surfaceAttachMaps!);
+        CheckResetLayer();
 
         if (HighLogic.LoadedSceneIsEditor || HighLogic.LoadedSceneIsFlight)
             DragCubeTool.UpdateDragCubes(part);
@@ -64,23 +65,23 @@ public partial class ModuleAdaptiveTankBase
         UpdateVolume(isInitialize);
     }
 
-    protected void RealizeGeometry(bool fullRebuild)
+    protected void RealizeStacks(bool fullRebuild)
     {
         var didInstantiateGO = RealizeStackIncremental(
-            segmentStacks!.Skin,
+            stacks!.Skin,
             SkinStackAnchorName,
             skinLinkedMaterial,
             fullRebuild);
         didInstantiateGO |= RealizeStackIncremental(
-            segmentStacks.Core,
+            stacks.Core,
             CoreStackAnchorName,
             coreLinkedMaterial,
             fullRebuild);
 
         if (didInstantiateGO) part.ResetAllRendererCaches();
 
-        var skinDistortion = segmentStacks.Skin.WorstDistortion();
-        var coreDistortion = segmentStacks.Core.WorstDistortion();
+        var skinDistortion = stacks.Skin.WorstDistortion();
+        var coreDistortion = stacks.Core.WorstDistortion();
         sWorstDistortion = $"skin {skinDistortion:P1}; core {coreDistortion:P1}";
     }
 
@@ -109,7 +110,7 @@ public partial class ModuleAdaptiveTankBase
 
                 mesh.SetActive(true);
                 mesh.transform.NestToParent(anchor);
-                mesh.transform.SetLayerRecursive(part.gameObject.layer);
+                mesh.SetLayerExceptTriggers(gameObject.layer);
 
                 rendererCache.UnionWith(mesh.GetComponentsInChildren<Renderer>());
 
@@ -127,6 +128,7 @@ public partial class ModuleAdaptiveTankBase
             {
                 foreach (var renderer in mesh.GetComponentsInChildren<Renderer>())
                     rendererCache.Remove(renderer);
+                mesh.SetActive(false);
                 Destroy(mesh);
             }
         }
@@ -134,11 +136,10 @@ public partial class ModuleAdaptiveTankBase
         return didInstantiateGO;
     }
 
-    protected void RecenterStack()
+    protected void RecenterStacks()
     {
-        part.GetOrCreateAnchor(SkinStackAnchorName).localPosition =
-            part.GetOrCreateAnchor(CoreStackAnchorName).localPosition =
-                Vector3.down * segmentStacks!.HalfHeight;
+        stacks!.ApplyAnchorPosition(part.GetOrCreateAnchor(SkinStackAnchorName));
+        stacks!.ApplyAnchorPosition(part.GetOrCreateAnchor(CoreStackAnchorName));
     }
 
     #endregion
@@ -231,7 +232,7 @@ public partial class ModuleAdaptiveTankBase
     {
         nodeSurface.MoveTo(Vector3.right * diameter * 0.5f, pushParts);
 
-        var halfHeight = segmentStacks!.HalfHeight;
+        var halfHeight = stacks!.HalfHeight;
         nodeTop.MoveTo(Vector3.up * halfHeight, pushParts);
         nodeBottom.MoveTo(Vector3.down * halfHeight, pushParts);
 
@@ -251,7 +252,7 @@ public partial class ModuleAdaptiveTankBase
         nodeSize = Math.Max(0, nodeSize - 1);
 
         var pool = nodeDynamicPool[position];
-        var terminator = segmentStacks!.Skin.GetTerminator(position);
+        var terminator = stacks!.Skin.GetTerminator(position);
         var segmentMesh = terminator.RealizedMesh;
         var numExtraNodes = 0;
 
@@ -294,24 +295,98 @@ public partial class ModuleAdaptiveTankBase
         part.stackSymmetry = Math.Max(symmetryTop, symmetryBottom);
     }
 
-    protected void MoveSurfaceAttachedChildren(float oldDiameter)
+    #endregion
+
+    #region surface-attached children management
+
+    private int? originalLayer = null;
+
+    protected void OverrideLayer(UnityLayer layer)
     {
-        var deltaRadius = (diameter - oldDiameter) / 2f;
+        if (originalLayer == (int)layer || gameObject.layer == (int)layer) return;
+        originalLayer = gameObject.layer;
+        gameObject.SetLayerExceptTriggers(layer);
+    }
+
+    protected void CheckResetLayer()
+    {
+        if (originalLayer == null) return;
+        gameObject.SetLayerExceptTriggers(originalLayer.Value);
+        originalLayer = null;
+    }
+
+    protected const UnityLayer RaycastLayer = UnityLayer.Water;
+
+    protected readonly record struct SurfaceAttachMap(Cap? Region, Cylindrical NormalizedPosition);
+
+    protected float GetLocalRadiusAtPosition(float theta, float y)
+    {
+        OverrideLayer(RaycastLayer);
+
+        var nominalRad = stacks!.Diameter * 0.5f;
+        var maxRad = nominalRad * 1.5f;
+        var raycastTol = nominalRad * 0.005f;
+
+        var localRayOrigin = (Vector3)new Cylindrical(maxRad, theta, y);
+        var localRayDir = (Vector3)new Cylindrical(-1f, theta, 0f);
+        Ray worldRay = new(
+            transform.TransformPoint(localRayOrigin),
+            transform.TransformDirection(localRayDir));
+
+        if (Physics.SphereCast(worldRay, raycastTol, out var hit, maxRad, 1 << (int)RaycastLayer))
+        {
+            var hitVector = worldRay.direction * hit.distance;
+            return maxRad - transform.InverseTransformVector(hitVector).magnitude;
+        }
+
+        return nominalRad;
+    }
+
+    protected Dictionary<Part, SurfaceAttachMap>? BuildSurfaceAttachMaps()
+    {
+        if (stacks == null) return null;
+
+        Dictionary<Part, SurfaceAttachMap> attachMaps = new();
 
         foreach (var child in part.IterSurfaceAttachedChildren())
         {
-            var worldPos = child.transform.position;
-            var localPos = transform.InverseTransformPoint(worldPos);
-            if (deltaRadius != 0)
+            var worldPos = child.transform.TransformPoint(child.srfAttachNode.position);
+            var localPos = (Cylindrical)transform.InverseTransformPoint(worldPos);
+
+            var localRad = GetLocalRadiusAtPosition(localPos.theta, localPos.y);
+            var radOffset = localPos.r - localRad;
+
+            var attachHeight = localPos.y + stacks.HalfHeight;
+            var (region, normHeight) = stacks.Skin.GetRegionNormalizedHeight(attachHeight);
+
+            var normPos = new Cylindrical(radOffset, localPos.theta, normHeight);
+            attachMaps[child] = new SurfaceAttachMap(region, normPos);
+        }
+
+        return attachMaps;
+    }
+
+    protected void PushSurfaceAttachedChildren(Dictionary<Part, SurfaceAttachMap> attachMaps)
+    {
+        foreach (var kvp in attachMaps)
+        {
+            var (child, (region, normPos)) = (kvp.Key, kvp.Value);
+            if (child.srfAttachNode.attachedPart != part)
             {
-                var localPushNrm =
-                    Vector3.ProjectOnPlane(localPos, Vector3.up).normalized * deltaRadius;
-                var worldPushNrm = transform.TransformVector(localPushNrm);
-                child.PushBy(worldPushNrm);
+                Debug.LogError(
+                    $"surface attach map contained mismatched child `{child.persistentId}`");
+                continue;
             }
-            // TODO: take local geometry at position of attachment into account.
-            // Current logic only works for cylindrical objects.
-            // TODO: shift vertically on height change. This will depend on cap vs body.
+
+            var attachHeight = stacks!.Skin.GetRealHeightFromNormalizedRegion(region, normPos.y);
+            var localPosY = attachHeight - stacks.HalfHeight;
+            var localRad = GetLocalRadiusAtPosition(normPos.theta, localPosY);
+
+            var localPos = (Vector3)new Cylindrical(localRad + normPos.r, normPos.theta, localPosY);
+            var worldPos = transform.TransformPoint(localPos);
+
+            var currWorldPos = child.transform.TransformPoint(child.srfAttachNode.position);
+            child.PushBy(worldPos - currWorldPos);
         }
     }
 

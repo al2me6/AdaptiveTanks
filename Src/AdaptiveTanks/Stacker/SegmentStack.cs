@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using AdaptiveTanks.Utils;
@@ -6,38 +7,41 @@ using UnityEngine;
 namespace AdaptiveTanks;
 
 /// <summary>
-/// In diameter-normalized (i.e. aspect ratio) units.
+/// In diameter-normalized (aspect ratio) units, relative to the root (bottom) of the stack.
 /// </summary>
 public readonly record struct ProtoSegmentPlacement(
     SegmentRole Role,
     Asset Asset,
     float Baseline,
-    float Stretch
+    float Stretch,
+    float Padding
 );
 
 public readonly record struct SegmentStackBuilder(float Diameter)
 {
     private readonly List<ProtoSegmentPlacement> ProtoPlacements = [];
 
-    public void Add(SegmentRole role, Asset asset, float normBaseline, float normStretch)
+    public void Add(
+        SegmentRole role, Asset asset, float normBaseline, float normStretch, float padding)
     {
-        ProtoPlacements.Add(new ProtoSegmentPlacement(role, asset, normBaseline, normStretch));
+        ProtoPlacements.Add(
+            new ProtoSegmentPlacement(role, asset, normBaseline, normStretch, padding));
     }
 
     public void Add(BodySolution bodySolution, float normBaseline)
     {
         foreach (var segment in bodySolution.Stack)
         {
-            Add(SegmentRole.Tank, segment.Asset, normBaseline, segment.Stretch);
+            Add(SegmentRole.Tank, segment.Asset, normBaseline, segment.Stretch, 0f);
             normBaseline += segment.StretchedAspectRatio;
         }
     }
 
-    public SegmentStack Build(float aspectRatio)
+    public SegmentStack Build()
     {
         List<SegmentPlacement> realPlacements = new(ProtoPlacements.Count);
 
-        foreach (var (segmentRole, asset, normBaseline, stretch) in ProtoPlacements)
+        foreach (var (segmentRole, asset, normBaseline, stretch, normPadding) in ProtoPlacements)
         {
             var yStretch = stretch;
             var nativeDiameter = asset.nativeDiameter;
@@ -53,27 +57,34 @@ public readonly record struct SegmentStackBuilder(float Diameter)
             if (shouldFlip) yStretch *= -1;
             var nativeBottom = shouldFlip ? -asset.nativeBaseline.y : asset.nativeBaseline.x;
 
-            var realScale =
-                new Vector3(1f, yStretch, 1f) * Diameter / nativeDiameter;
-            var realOffset =
-                Vector3.up * (normBaseline - nativeBottom / nativeDiameter * stretch) * Diameter;
-
-            realPlacements.Add(new SegmentPlacement(segmentRole, asset, realScale, realOffset));
+            var realHeightMin = normBaseline * Diameter;
+            var realBottomOffset = nativeBottom / nativeDiameter * stretch * Diameter;
+            realPlacements.Add(new SegmentPlacement(
+                Role: segmentRole,
+                Asset: asset,
+                HeightMin: realHeightMin,
+                Padding: normPadding * Diameter,
+                Scale: new Vector3(1f, yStretch, 1f) * Diameter / nativeDiameter,
+                Offset: Vector3.up * (realHeightMin - realBottomOffset)));
         }
 
-        return new SegmentStack(Diameter, aspectRatio, realPlacements);
+        return new SegmentStack(Diameter, realPlacements);
     }
 }
 
+/// In real (m) units, relative to the root (bottom) of the stack.
 public record SegmentPlacement(
     SegmentRole Role,
     Asset Asset,
+    float HeightMin,
+    float Padding,
     Vector3 Scale,
     Vector3 Offset)
 {
-    public Transform? RealizedMesh { get; private set; } = null;
+    public float Height => Asset.NativeHeight * Mathf.Abs(Scale.y) + Padding;
+    public float HeightMax => HeightMin + Height;
 
-    public float Height => Asset.NativeHeight * Mathf.Abs(Scale.y);
+    public Transform? RealizedMesh { get; private set; } = null;
 
     public void RealizeWith(GameObject go)
     {
@@ -83,14 +94,46 @@ public record SegmentPlacement(
     }
 }
 
-public record SegmentStack(
-    float Diameter,
-    float AspectRatio,
-    List<SegmentPlacement> Placements)
+public record SegmentStack(float Diameter, IReadOnlyList<SegmentPlacement> Placements)
 {
+    public float Height { get; } = Placements.Select(pl => pl.Height).Sum();
+    public float HalfHeight => Height * 0.5f;
+
+    public float TerminatorBottomHeightMax => GetTerminator(CapPosition.Bottom).HeightMax;
+    public float TerminatorTopHeightMin => GetTerminator(CapPosition.Top).HeightMin;
+
+    public (float min, float max) GetRangeOfRegion(CapPosition? region) => region switch
+    {
+        CapPosition.Bottom => (0f, TerminatorBottomHeightMax),
+        null => (TerminatorBottomHeightMax, TerminatorTopHeightMin),
+        CapPosition.Top => (TerminatorTopHeightMin, Height),
+        _ => throw new ArgumentOutOfRangeException(nameof(region))
+    };
+
+    public (CapPosition? region, float min, float max) GetRegionRangeAtHeight(float height)
+    {
+        CapPosition? region = null;
+        if (height < TerminatorBottomHeightMax) region = CapPosition.Bottom;
+        else if (TerminatorTopHeightMin <= height) region = CapPosition.Top;
+        var (min, max) = GetRangeOfRegion(region);
+        return (region, min, max);
+    }
+
+    public (CapPosition? region, float normalizedHeight) GetRegionNormalizedHeight(float height)
+    {
+        var (region, min, max) = GetRegionRangeAtHeight(height);
+        return (region, (height - min) / (max - min));
+    }
+
+    public float GetRealHeightFromNormalizedRegion(CapPosition? region, float normalizedHeight)
+    {
+        var (min, max) = GetRangeOfRegion(region);
+        return normalizedHeight * (max - min) + min;
+    }
+
     public SegmentPlacement GetTerminator(CapPosition position)
     {
-        var terminator = Placements[position == CapPosition.Bottom ? 0 : ^1];
+        var terminator = position == CapPosition.Bottom ? Placements[0] : Placements[^1];
         if (!terminator.Role.IsTerminator())
             Debug.LogError("non-terminator segment found in terminating position");
         return terminator;
@@ -128,9 +171,9 @@ public record SegmentStack(
     public float WorstDistortion()
     {
         var worstDelta = 0f;
-        foreach (var (_, _, scale, _) in Placements)
+        foreach (var placement in Placements)
         {
-            var delta = Mathf.Abs(scale.y) / Mathf.Abs(scale.x) - 1f;
+            var delta = Mathf.Abs(placement.Scale.y) / Mathf.Abs(placement.Scale.x) - 1f;
             if (Mathf.Abs(delta) > Mathf.Abs(worstDelta)) worstDelta = delta;
         }
 
@@ -147,13 +190,16 @@ public record SegmentStacks
     {
         Skin = skin;
         Core = core;
-        if (!MathUtils.ApproxEqAbs(Skin.AspectRatio, Core.AspectRatio, SegmentStacker.Tolerance))
-            Debug.LogError($"mismatched solution aspects {Skin.AspectRatio}, {Core.AspectRatio}");
+        if (!MathUtils.ApproxEqAbs(Skin.Height, Core.Height, SegmentStacker.Tolerance))
+            Debug.LogError($"mismatched stack heights {Skin.Height} != {Core.Height}");
         if (!MathUtils.ApproxEqRel(Skin.Diameter, Core.Diameter, 1e-4f))
-            Debug.LogError($"mismatched solution aspects {Skin.Diameter}, {Core.Diameter}");
+            Debug.LogError($"mismatched stack diameters {Skin.Diameter} != {Core.Diameter}");
     }
 
     public float Diameter => Skin.Diameter;
-    public float Height => Skin.Diameter * Skin.AspectRatio;
-    public float HalfHeight => Height * 0.5f;
+    public float Height => Skin.Height;
+    public float HalfHeight => Skin.HalfHeight;
+
+    public void ApplyAnchorPosition(Transform anchor) =>
+        anchor.localPosition = Vector3.down * HalfHeight;
 }

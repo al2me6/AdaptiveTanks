@@ -321,7 +321,7 @@ internal class ProtoSegmentStack
                     // Note that for a bottom cap, the padding is below the segment.
                     var isBottom = position == CapPosition.Bottom;
                     if (isBottom) baseline += padding;
-                    builder.Add(role, asset!, baseline, forceStretch);
+                    builder.Add(role, asset!, baseline, forceStretch, padding);
                     if (!isBottom) baseline += padding;
                     baseline += asset!.AspectRatio * forceStretch;
                     break;
@@ -330,7 +330,7 @@ internal class ProtoSegmentStack
                     Role: var role, Asset: var asset,
                     AdjustedAspectRatio: var adjustedAspect, ForceStretch: var forceStretch
                 }:
-                    builder.Add(role, asset!, baseline, forceStretch);
+                    builder.Add(role, asset!, baseline, forceStretch, 0f);
                     baseline += adjustedAspect;
                     break;
                 case Flex { Solution: var bodySolution }:
@@ -340,7 +340,7 @@ internal class ProtoSegmentStack
             }
         }
 
-        return builder.Build(baseline);
+        return builder.Build();
     }
 
     #endregion
