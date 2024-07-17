@@ -102,6 +102,16 @@ public record SegmentStack(float Diameter, IReadOnlyList<SegmentPlacement> Place
     public float TerminatorBottomHeightMax => GetTerminator(CapPosition.Bottom).HeightMax;
     public float TerminatorTopHeightMin => GetTerminator(CapPosition.Top).HeightMin;
 
+    private readonly float[] segmentBottoms = Placements.Select(pl => pl.HeightMin).ToArray();
+
+    public SegmentPlacement GetSegmentAtHeight(float height)
+    {
+        if (height <= 0f) return Placements[0];
+        if (Height <= height) return Placements[^1];
+        var idx = Array.BinarySearch(segmentBottoms, height);
+        return idx > 0 ? Placements[idx] : Placements[~idx - 1];
+    }
+
     public (float min, float max) GetRangeOfRegion(CapPosition? region) => region switch
     {
         CapPosition.Bottom => (0f, TerminatorBottomHeightMax),
